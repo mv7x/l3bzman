@@ -33,40 +33,21 @@
             .room-card h1 { margin: 0 0 8px; font-size: 30px; }
             .room-card p { margin: 0 0 24px; color: #aeb9c8; line-height: 1.5; }
             .room-input {
-                width: 100%;
-                height: 48px;
-                margin-bottom: 12px;
-                padding: 0 15px;
-                border: 1px solid #344258;
-                border-radius: 12px;
-                outline: none;
-                background: #0b111b;
-                color: #fff;
-                font-size: 16px;
+                width: 100%; height: 48px; margin-bottom: 12px; padding: 0 15px;
+                border: 1px solid #344258; border-radius: 12px; outline: none;
+                background: #0b111b; color: #fff; font-size: 16px;
             }
             .room-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
             .room-btn {
-                height: 48px;
-                border: 0;
-                border-radius: 12px;
-                cursor: pointer;
-                color: #fff;
-                font-weight: 700;
-                font-size: 15px;
-                background: #2563eb;
+                height: 48px; border: 0; border-radius: 12px; cursor: pointer;
+                color: #fff; font-weight: 700; font-size: 15px; background: #2563eb;
             }
             .room-btn.secondary { background: #263449; }
             .room-btn:disabled { opacity: .45; cursor: not-allowed; }
             .room-message { min-height: 22px; margin-top: 16px; color: #aeb9c8; font-size: 14px; }
             .room-message.error { color: #ff7d7d; }
             .room-message.success { color: #79e6a2; }
-            .room-code-box {
-                margin: 20px 0;
-                padding: 18px;
-                border-radius: 16px;
-                background: #0a1019;
-                border: 1px solid #29364a;
-            }
+            .room-code-box { margin: 20px 0; padding: 18px; border-radius: 16px; background: #0a1019; border: 1px solid #29364a; }
             #room-code { display: block; margin: 4px 0; font-size: 36px; letter-spacing: 8px; }
             .players { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
             .player-slot { padding: 14px 8px; border-radius: 14px; background: #151f2e; }
@@ -91,7 +72,7 @@
                         <button id="create-room" class="room-btn">Create Room</button>
                         <button id="join-room" class="room-btn secondary">Join Room</button>
                     </div>
-                    <div id="room-message" class="room-message">Create a room or enter a room code.</div>
+                    <div id="room-message-setup" class="room-message">Create a room or enter a room code.</div>
                 </div>
 
                 <div id="room-waiting" class="hidden">
@@ -111,7 +92,7 @@
                         <button id="start-game" class="room-btn" disabled>Start Game</button>
                     </div>
                     <button id="leave-room" class="room-btn secondary" style="width:100%;margin-top:10px">Leave Room</button>
-                    <div id="room-message" class="room-message"></div>
+                    <div id="room-message-waiting" class="room-message"></div>
                 </div>
             </div>
         </section>
