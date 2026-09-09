@@ -3,13 +3,120 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Fireboy and Watergirl</title>
+        <title>Fireboy & Watergirl — Online</title>
         <link rel="stylesheet" href="./res/css/style.css" />
         <link rel="icon" href="./res/img/logo.png">
+        <style>
+            * { box-sizing: border-box; }
+            body { margin: 0; min-height: 100vh; }
+            #canvas.hidden { display: none; }
+            .hidden { display: none !important; }
+            #room-lobby {
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+                background: radial-gradient(circle at top, #26354d 0%, #101722 48%, #080c12 100%);
+                color: #fff;
+                font-family: Arial, sans-serif;
+            }
+            .room-card {
+                width: min(460px, 100%);
+                padding: 30px;
+                border: 1px solid rgba(255,255,255,.14);
+                border-radius: 24px;
+                background: rgba(15,23,35,.94);
+                box-shadow: 0 24px 80px rgba(0,0,0,.45);
+                text-align: center;
+            }
+            .room-card h1 { margin: 0 0 8px; font-size: 30px; }
+            .room-card p { margin: 0 0 24px; color: #aeb9c8; line-height: 1.5; }
+            .room-input {
+                width: 100%;
+                height: 48px;
+                margin-bottom: 12px;
+                padding: 0 15px;
+                border: 1px solid #344258;
+                border-radius: 12px;
+                outline: none;
+                background: #0b111b;
+                color: #fff;
+                font-size: 16px;
+            }
+            .room-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+            .room-btn {
+                height: 48px;
+                border: 0;
+                border-radius: 12px;
+                cursor: pointer;
+                color: #fff;
+                font-weight: 700;
+                font-size: 15px;
+                background: #2563eb;
+            }
+            .room-btn.secondary { background: #263449; }
+            .room-btn:disabled { opacity: .45; cursor: not-allowed; }
+            .room-message { min-height: 22px; margin-top: 16px; color: #aeb9c8; font-size: 14px; }
+            .room-message.error { color: #ff7d7d; }
+            .room-message.success { color: #79e6a2; }
+            .room-code-box {
+                margin: 20px 0;
+                padding: 18px;
+                border-radius: 16px;
+                background: #0a1019;
+                border: 1px solid #29364a;
+            }
+            #room-code { display: block; margin: 4px 0; font-size: 36px; letter-spacing: 8px; }
+            .players { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+            .player-slot { padding: 14px 8px; border-radius: 14px; background: #151f2e; }
+            .player-slot small { display: block; color: #8290a4; margin-bottom: 6px; }
+            .player-slot strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .room-wait-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+            @media (max-width: 520px) {
+                .room-actions, .room-wait-actions, .players { grid-template-columns: 1fr; }
+                .room-card { padding: 22px; }
+            }
+        </style>
     </head>
     <body>
-        <canvas id="canvas"></canvas>
+        <section id="room-lobby">
+            <div class="room-card">
+                <div id="room-setup">
+                    <h1>🔥💧 Fireboy & Watergirl</h1>
+                    <p>Play cooperatively online. Create a room and send the code to your friend.</p>
+                    <input id="player-name" class="room-input" maxlength="24" placeholder="Your name" autocomplete="nickname" />
+                    <input id="room-code-input" class="room-input" maxlength="6" inputmode="numeric" placeholder="Room code (to join)" />
+                    <div class="room-actions">
+                        <button id="create-room" class="room-btn">Create Room</button>
+                        <button id="join-room" class="room-btn secondary">Join Room</button>
+                    </div>
+                    <div id="room-message" class="room-message">Create a room or enter a room code.</div>
+                </div>
 
+                <div id="room-waiting" class="hidden">
+                    <h1>Online Room</h1>
+                    <p>Give this code to your friend. Both players will share the same game room.</p>
+                    <div class="room-code-box">
+                        <small>ROOM CODE</small>
+                        <strong id="room-code">----</strong>
+                        <small id="room-role">Host</small>
+                    </div>
+                    <div class="players">
+                        <div class="player-slot"><small>🔥 Fireboy</small><strong id="host-name">Waiting...</strong></div>
+                        <div class="player-slot"><small>💧 Watergirl</small><strong id="guest-name">Waiting for player...</strong></div>
+                    </div>
+                    <div class="room-wait-actions">
+                        <button id="copy-room" class="room-btn secondary">Copy Invite</button>
+                        <button id="start-game" class="room-btn" disabled>Start Game</button>
+                    </div>
+                    <button id="leave-room" class="room-btn secondary" style="width:100%;margin-top:10px">Leave Room</button>
+                    <div id="room-message" class="room-message"></div>
+                </div>
+            </div>
+        </section>
+
+        <canvas id="canvas" class="hidden"></canvas>
         <script src="./res/js/main.js" type="module"></script>
     </body>
 </html>
