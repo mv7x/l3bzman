@@ -1,5 +1,5 @@
 // Ember & Tide runtime loader
-// Uses the maintained modular source and adds mobile/touch compatibility.
+// Uses the maintained modular source and guarantees app initialization.
 (function () {
   const style = document.createElement('style');
   style.textContent = `
@@ -16,20 +16,19 @@
   `;
   document.head.appendChild(style);
 
-  // app.js uses DOMContentLoaded, but it is loaded through dynamic import.
-  // The import can finish after DOMContentLoaded has already fired, which
-  // previously left window.app uninitialized and made ALL game controls dead.
-  let domContentLoadedFired = false;
-  document.addEventListener('DOMContentLoaded', () => {
-    domContentLoadedFired = true;
-  }, { once: true });
+  let domLoaded = document.readyState !== 'loading';
+  if (!domLoaded) {
+    window.addEventListener('DOMContentLoaded', () => { domLoaded = true; }, { once: true });
+  }
 
   import('./src/app.js')
     .then(() => {
-      // If app.js registered its DOMContentLoaded handler too late, replay
-      // the event once so the AppController is created exactly once.
-      if (domContentLoadedFired && !window.app) {
-        document.dispatchEvent(new Event('DOMContentLoaded'));
+      // app.js registers its constructor on window's DOMContentLoaded event.
+      // Because this file is loaded at the end of <body>, the event may already
+      // have fired before the dynamic module finishes loading. Re-fire it on
+      // WINDOW (not document) so app.js's listener is actually invoked.
+      if (domLoaded && !window.app) {
+        window.dispatchEvent(new Event('DOMContentLoaded'));
       }
 
       const installMobileInput = () => {
