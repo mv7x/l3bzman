@@ -32,7 +32,7 @@ export const level1 = {
     // Tier 2 - Mid tier; the acid pool is elevated so players can route underneath it
     { x: 160, y: 440, width: 440, height: 20, solid: true },
     { x: 620, y: 460, width: 380, height: 20, solid: true },
-    { x: 740, y: 600, width: 180, height: 20, solid: true },
+    { x: 740, y: 610, width: 180, height: 20, solid: true },
     { x: 1020, y: 480, width: 228, height: 20, solid: true },
 
     { x: 300, y: 280, width: 340, height: 20, solid: true },
