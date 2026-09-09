@@ -81,7 +81,6 @@
 
         <canvas id="canvas" class="hidden"></canvas>
 
-        <!-- Direct UI fallback: the mode buttons work even if main.js event binding is delayed. -->
         <script>
             window.fireboyOnlinePlay = function () {
                 document.getElementById("mode-menu").classList.add("hidden");
@@ -98,10 +97,13 @@
                 const message = document.getElementById("mode-message");
                 button.disabled = true;
                 message.textContent = "Loading game...";
+                message.classList.remove("error");
 
                 try {
-                    const game = await import("./res/js/game.js");
-                    const helpers = await import("./res/js/helpers.js");
+                    // Use the deployed repository path explicitly. Vercel can rewrite the
+                    // document URL, so a document-relative import can incorrectly become /res/js/.
+                    const game = await import("/Fireboy-Watergirl/res/js/game.js");
+                    const helpers = await import("/Fireboy-Watergirl/res/js/helpers.js");
                     await helpers.loadData();
                     helpers.loadDataFromLocalStorage();
                     document.getElementById("mode-menu").classList.add("hidden");
