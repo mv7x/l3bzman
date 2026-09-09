@@ -23,7 +23,7 @@ export const level1 = {
     { x: 1248, y: 0, width: 32, height: 720, solid: true },
     { x: 0, y: 0, width: 1280, height: 32, solid: true },
 
-    // Tier 1 - Continuous stone floor/basins beneath every elemental pool.
+    // Tier 1 - Solid floor beneath the full lava and water basins.
     { x: 0, y: 680, width: 560, height: 40, solid: true },
     { x: 560, y: 708, width: 360, height: 12, solid: true },
     { x: 920, y: 680, width: 360, height: 40, solid: true },
@@ -31,10 +31,11 @@ export const level1 = {
     { x: 140, y: 600, width: 280, height: 20, solid: true },
     { x: 440, y: 540, width: 320, height: 20, solid: true },
 
-    // Tier 2 - Mid tier; the acid pool is elevated so players can route underneath it.
+    // Tier 2 - Mid tier; the acid pool has a solid ledge underneath it.
     { x: 160, y: 440, width: 440, height: 20, solid: true },
     { x: 620, y: 460, width: 380, height: 20, solid: true },
-    { x: 740, y: 610, width: 180, height: 20, solid: true },
+    // 42px clearance below the acid so both players can pass underneath it.
+    { x: 740, y: 606, width: 180, height: 20, solid: true },
     { x: 1020, y: 480, width: 228, height: 20, solid: true },
 
     { x: 300, y: 280, width: 340, height: 20, solid: true },
@@ -47,9 +48,10 @@ export const level1 = {
   ],
 
   hazards: [
+    // Keep the original 180px lava and water basin sizes.
     { type: 'lava', x: 560, y: 684, width: 180, height: 24 },
     { type: 'water', x: 740, y: 684, width: 180, height: 24 },
-    // Elevated toxic pool: solid floor is the y=560 platform below it.
+    // Elevated toxic pool with solid ground beneath it.
     { type: 'acid', x: 760, y: 544, width: 160, height: 20 }
   ],
 
