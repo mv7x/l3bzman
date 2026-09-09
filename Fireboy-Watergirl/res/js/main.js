@@ -6,6 +6,7 @@ const $ = (id) => document.getElementById(id);
 let gameStarted = false;
 let roomWatching = false;
 let localMode = false;
+let dataReady = false;
 
 function showLobbyMessage(message, error = false) {
     const box = $("room-waiting").classList.contains("hidden") ? $("room-message-setup") : $("room-message-waiting");
@@ -15,7 +16,21 @@ function showLobbyMessage(message, error = false) {
     box.classList.toggle("success", !error);
 }
 
-function startLocalGame() {
+async function startLocalGame() {
+    if (gameStarted) return;
+
+    // The original game needs its JSON data before playGame() can build a level.
+    // Wait for the boot process instead of silently ignoring the button click.
+    if (!dataReady) {
+        showLobbyMessage("Loading game data...", false);
+        try {
+            await window.fireboyWatergirlDataReady;
+        } catch (error) {
+            showLobbyMessage(error.message || "Game data could not be loaded.", true);
+            return;
+        }
+    }
+
     if (gameStarted) return;
     localMode = true;
     gameStarted = true;
@@ -40,13 +55,24 @@ function setRoomPanel(room) {
 function autoSelectFirstLevel() {
     const canvas = $("canvas");
     const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
     const x = rect.left + rect.width * 0.48;
     const y = rect.top + rect.height * 0.9;
     canvas.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: x, clientY: y }));
     canvas.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: x, clientY: y }));
 }
 
-function beginOnlineGame() {
+async function beginOnlineGame() {
+    if (gameStarted) return;
+
+    try {
+        await window.fireboyWatergirlDataReady;
+    } catch (error) {
+        showLobbyMessage(error.message || "Game data could not be loaded.", true);
+        return;
+    }
+
     if (gameStarted) return;
     gameStarted = true;
     const info = getRoomInfo();
@@ -55,7 +81,7 @@ function beginOnlineGame() {
     $("canvas").classList.remove("hidden");
     history.replaceState(null, "", `${window.location.pathname}?room=${info.roomCode}`);
     playGame();
-    setTimeout(autoSelectFirstLevel, 80);
+    setTimeout(autoSelectFirstLevel, 150);
 }
 
 async function create() {
@@ -105,8 +131,10 @@ async function leave() { await leaveRoom(); location.href = location.pathname; }
 
 async function boot() {
     patchPlayerNetworking();
-    await loadData();
-    loadDataFromLocalStorage();
+
+    // Register UI handlers immediately. Previously boot waited for all JSON files
+    // before registering the click handlers, so one failed/slow fetch made every
+    // button appear dead.
     $("local-play").addEventListener("click", startLocalGame);
     $("online-play").addEventListener("click", () => { $("mode-menu").classList.add("hidden"); $("room-lobby").classList.remove("hidden"); });
     $("back-mode").addEventListener("click", () => { $("room-lobby").classList.add("hidden"); $("mode-menu").classList.remove("hidden"); });
@@ -115,9 +143,26 @@ async function boot() {
     $("start-game").addEventListener("click", start);
     $("copy-room").addEventListener("click", copyRoom);
     $("leave-room").addEventListener("click", leave);
+
     const params = new URLSearchParams(window.location.search);
     const roomFromUrl = params.get("room");
     if (roomFromUrl) { $("room-code-input").value = roomFromUrl; $("mode-menu").classList.add("hidden"); $("room-lobby").classList.remove("hidden"); }
     $("player-name").value = localStorage.getItem("fireboy_watergirl_name") || "";
+
+    window.fireboyWatergirlDataReady = loadData()
+        .then(() => {
+            loadDataFromLocalStorage();
+            dataReady = true;
+        })
+        .catch((error) => {
+            dataReady = false;
+            throw error;
+        });
+
+    try {
+        await window.fireboyWatergirlDataReady;
+    } catch (error) {
+        showLobbyMessage(error.message || "Game files could not be loaded. Check that the Fireboy-Watergirl folder is uploaded completely.", true);
+    }
 }
 window.addEventListener("load", boot);
