@@ -1,5 +1,4 @@
-// Ember & Tide runtime loader
-// Uses the maintained modular source and guarantees app initialization.
+// Ember & Tide runtime bootstrap + gameplay hardening
 (function () {
   const style = document.createElement('style');
   style.textContent = `
@@ -22,168 +21,14 @@
   }
 
   import('./src/app.js')
-    .then(async () => {
+    .then(() => {
       if (domLoaded && !window.app) {
         window.dispatchEvent(new Event('DOMContentLoaded'));
       }
 
-      // ------------------------------------------------------------
-      // Online replication hardening
-      // ------------------------------------------------------------
-      // Firebase RTDB is not a deterministic 60 FPS transport. Packets can
-      // arrive in bursts, be delayed, or contain an older snapshot after a
-      // restart. The original client immediately lerped every packet, which
-      // made the remote player jitter, sink visually into the level, or jump
-      // to a stale position. Keep a tiny timestamped snapshot buffer and
-      // render the remote player slightly behind the newest packet instead.
-      try {
-        const { Player } = await import('./src/entities/player.js');
-
-        Player.prototype.applyRemoteState = function (state) {
-          if (!state) return;
-
-          const x = Number(state.x);
-          const y = Number(state.y);
-          if (!Number.isFinite(x) || !Number.isFinite(y)) return;
-
-          const timestamp = Number(state.t) || 0;
-          if (timestamp && this.__remoteLastTimestamp && timestamp <= this.__remoteLastTimestamp) {
-            return;
-          }
-          if (timestamp) this.__remoteLastTimestamp = timestamp;
-
-          this.targetX = x;
-          this.targetY = y;
-          this.targetVx = Number(state.vx) || 0;
-          this.targetVy = Number(state.vy) || 0;
-          this.targetFacing = state.facing === -1 ? -1 : 1;
-
-          if (!Array.isArray(this.__remoteSnapshots)) this.__remoteSnapshots = [];
-
-          const snapshot = {
-            x,
-            y,
-            vx: this.targetVx,
-            vy: this.targetVy,
-            facing: this.targetFacing,
-            grounded: !!state.isGrounded,
-            t: timestamp || Date.now()
-          };
-
-          this.__remoteSnapshots.push(snapshot);
-          if (this.__remoteSnapshots.length > 8) this.__remoteSnapshots.shift();
-
-          // A death/respawn is an intentional discontinuity. Snap only for
-          // those transitions; ordinary movement is always interpolated.
-          if (state.isDead && !this.isDead) {
-            this.die('remote');
-          } else if (!state.isDead && this.isDead) {
-            this.x = x;
-            this.y = y;
-            this.targetX = x;
-            this.targetY = y;
-            this.__remoteSnapshots.length = 0;
-            this.respawn();
-          }
-
-          if (state.isVictory) this.isVictory = true;
-          this.isGrounded = !!state.isGrounded;
-          this.animTime = state.animTime || this.animTime;
-          if (state.scaleX !== undefined) this.scaleX = state.scaleX;
-          if (state.scaleY !== undefined) this.scaleY = state.scaleY;
-
-          if (!this.__remoteInitialized) {
-            this.x = x;
-            this.y = y;
-            this.__remoteInitialized = true;
-          }
-        };
-
-        Player.prototype.updateRemote = function (dt) {
-          this.animTime += dt;
-
-          if (this.isDead) {
-            this.deathTimer -= dt;
-            if (this.deathTimer <= 0) this.respawn();
-            return;
-          }
-
-          if (this.isRespawning) {
-            this.respawnTimer -= dt;
-            if (this.respawnTimer <= 0) this.isRespawning = false;
-          }
-
-          const snapshots = this.__remoteSnapshots || [];
-          const renderTime = Date.now() - 90;
-
-          if (snapshots.length >= 2) {
-            let older = snapshots[0];
-            let newer = snapshots[snapshots.length - 1];
-
-            for (let i = 1; i < snapshots.length; i++) {
-              if (snapshots[i].t >= renderTime) {
-                newer = snapshots[i];
-                older = snapshots[i - 1];
-                break;
-              }
-            }
-
-            const span = Math.max(1, newer.t - older.t);
-            const alpha = Math.max(0, Math.min(1, (renderTime - older.t) / span));
-
-            let desiredX = older.x + (newer.x - older.x) * alpha;
-            let desiredY = older.y + (newer.y - older.y) * alpha;
-
-            // Short extrapolation during a late packet, never an unlimited
-            // prediction that can throw the remote player across the map.
-            if (renderTime > newer.t) {
-              const extra = Math.min((renderTime - newer.t) / 1000, 0.12);
-              desiredX = newer.x + newer.vx * extra;
-              desiredY = newer.y + newer.vy * extra;
-            }
-
-            const dx = desiredX - this.x;
-            const dy = desiredY - this.y;
-            const distance = Math.hypot(dx, dy);
-
-            if (distance <= 280) {
-              const smoothing = Math.min(1, 14 * dt);
-              this.x += dx * smoothing;
-              this.y += dy * smoothing;
-            } else {
-              // Do not chase a suspicious/stale snapshot. The next valid
-              // packet will move the player again. This removes map-wide
-              // teleports caused by a single bad RTDB update.
-            }
-          } else if (snapshots.length === 1) {
-            const s = snapshots[0];
-            const dx = s.x - this.x;
-            const dy = s.y - this.y;
-            const distance = Math.hypot(dx, dy);
-            if (distance <= 280) {
-              const smoothing = Math.min(1, 12 * dt);
-              this.x += dx * smoothing;
-              this.y += dy * smoothing;
-            }
-          }
-
-          const newest = snapshots[snapshots.length - 1];
-          if (newest) {
-            this.vx = newest.vx;
-            this.vy = newest.vy;
-            this.facing = newest.facing;
-            this.isGrounded = newest.grounded;
-            if (Math.abs(this.vx) > 20) this.walkCycle += dt * 14;
-            else this.walkCycle = 0;
-          }
-        };
-      } catch (syncPatchError) {
-        console.warn('Online replication hardening could not be installed:', syncPatchError);
-      }
-
       const installMobileInput = () => {
         const app = window.app;
-        if (!app || !app.engine || !app.engine.input) return false;
+        if (!app?.engine?.input) return false;
         const input = app.engine.input;
         if (input.__reliableMobileInputInstalled) return true;
 
@@ -199,7 +44,6 @@
         Object.entries(bindings).forEach(([id, action]) => {
           const button = document.getElementById(id);
           if (!button) return;
-
           const press = (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -208,13 +52,11 @@
               try { button.setPointerCapture(event.pointerId); } catch (_) {}
             }
           };
-
           const release = (event) => {
             event.preventDefault();
             event.stopPropagation();
             input.setTouchInput(action, false);
           };
-
           button.addEventListener('pointerdown', press, { passive: false });
           button.addEventListener('pointerup', release, { passive: false });
           button.addEventListener('pointercancel', release, { passive: false });
@@ -232,10 +74,9 @@
         return true;
       };
 
-      const patchGame = () => {
-        const app = window.app;
-        const hazards = app && app.engine && app.engine.hazards;
-        if (!hazards || hazards.__emberTideTouchPatch) return !!hazards;
+      const patchHazards = () => {
+        const hazards = window.app?.engine?.hazards;
+        if (!hazards || hazards.__emberTideHazardPatch) return !!hazards;
 
         const originalUpdate = hazards.update.bind(hazards);
         hazards.update = function (dt, players) {
@@ -243,29 +84,185 @@
             a.x < b.x + b.width && a.x + a.width > b.x &&
             a.y < b.y + b.height && a.y + a.height > b.y;
 
-          const ember = players.find((p) => p && p.type === 'ember' && !p.isDead && !p.isVictory);
-          const tide = players.find((p) => p && p.type === 'tide' && !p.isDead && !p.isVictory);
-          const touchingTide = !!(ember && tide && overlap(ember.getHitbox(), tide.getHitbox()));
+          const ember = players.find((p) => p?.type === 'ember' && !p.isDead && !p.isVictory);
+          const tide = players.find((p) => p?.type === 'tide' && !p.isDead && !p.isVictory);
+          const touchingPlayers = !!(ember && tide && overlap(ember.getHitbox(), tide.getHitbox()));
 
+          // The two characters may physically touch. Only elemental hazards
+          // determine death.
           const originalHazards = this.hazards;
           this.hazards = originalHazards.map((h) => ({
             ...h,
-            lethalTo: h.type === 'water' && touchingTide ? ['__never__'] : h.lethalTo
+            lethalTo: h.type === 'water' && touchingPlayers ? ['__never__'] : h.lethalTo
           }));
           originalUpdate(dt, players);
           this.hazards = originalHazards;
         };
+        hazards.__emberTideHazardPatch = true;
+        return true;
+      };
 
-        hazards.__emberTideTouchPatch = true;
+      const patchOnlineWorld = () => {
+        const app = window.app;
+        const engine = app?.engine;
+        const network = app?.network;
+        if (!engine || !network || engine.__emberTideWorldPatch) return !!engine;
+
+        const sanitizePlayer = (player) => {
+          if (!player) return;
+          if (!Number.isFinite(player.x)) player.x = Number.isFinite(player.spawnX) ? player.spawnX : 0;
+          if (!Number.isFinite(player.y)) player.y = Number.isFinite(player.spawnY) ? player.spawnY : 0;
+          if (!Number.isFinite(player.vx)) player.vx = 0;
+          if (!Number.isFinite(player.vy)) player.vy = 0;
+        };
+
+        const applyWorldSnapshot = (data) => {
+          if (!data) return;
+          const m = engine.mechanisms;
+          if (m) {
+            (data.pushBoxes || []).forEach((s) => {
+              const box = m.pushBoxes.find((b) => b.id === s.id);
+              if (!box) return;
+              if (Number.isFinite(s.x)) box.x = s.x;
+              if (Number.isFinite(s.y)) box.y = s.y;
+              box.vy = Number.isFinite(s.vy) ? s.vy : 0;
+              box.isGrounded = !!s.isGrounded;
+            });
+            (data.pressurePlates || []).forEach((s) => {
+              const p = m.pressurePlates.find((x) => x.id === s.id);
+              if (p) p.isPressed = !!s.isPressed;
+            });
+            (data.levers || []).forEach((s) => {
+              const l = m.levers.find((x) => x.id === s.id);
+              if (l) l.isOn = !!s.isOn;
+            });
+            (data.doors || []).forEach((s) => {
+              const d = m.doors.find((x) => x.id === s.id);
+              if (!d) return;
+              d.isOpen = !!s.isOpen;
+              if (Number.isFinite(s.openRatio)) d.openRatio = s.openRatio;
+              if (Number.isFinite(s.currentX)) d.currentX = s.currentX;
+              if (Number.isFinite(s.currentY)) d.currentY = s.currentY;
+              d.solid = !!s.solid;
+            });
+            (data.movingPlatforms || []).forEach((s) => {
+              const p = m.movingPlatforms.find((x) => x.id === s.id);
+              if (!p) return;
+              if (Number.isFinite(s.x)) p.x = s.x;
+              if (Number.isFinite(s.y)) p.y = s.y;
+              if (Number.isInteger(s.currentIndex)) p.currentIndex = s.currentIndex;
+              if (Number.isInteger(s.targetIndex)) p.targetIndex = s.targetIndex;
+              p.isActive = s.isActive !== false;
+              p.dx = Number.isFinite(s.dx) ? s.dx : 0;
+              p.dy = Number.isFinite(s.dy) ? s.dy : 0;
+            });
+          }
+
+          if (engine.collectibles && Array.isArray(data.collectibles)) {
+            data.collectibles.forEach((s, i) => {
+              if (engine.collectibles.items[i]) {
+                engine.collectibles.items[i].collected = !!s.collected;
+              }
+            });
+            engine.collectibles.collectedCount = engine.collectibles.items.filter((x) => x.collected).length;
+          }
+        };
+
+        const originalApplyPuzzleSync = engine.applyPuzzleSync.bind(engine);
+        engine.applyPuzzleSync = (action, data) => {
+          if (action === 'world_snapshot') {
+            applyWorldSnapshot(data);
+            return;
+          }
+          originalApplyPuzzleSync(action, data);
+        };
+
+        let lastWorldSignature = '';
+        const originalUpdate = engine.update.bind(engine);
+        engine.update = function (dt) {
+          const beforeCollected = this.collectibles?.items?.map((x) => !!x.collected) || [];
+          const originalSendShard = network.sendShardCollected;
+          let shardWasSent = false;
+
+          // game.js historically selected the first collected shard rather than
+          // the shard that changed this frame. Suppress that bad event and send
+          // the actual changed index after the frame completes.
+          if (this.isOnline && originalSendShard) {
+            network.sendShardCollected = () => { shardWasSent = true; };
+          }
+
+          originalUpdate(dt);
+
+          if (this.isOnline && originalSendShard) {
+            network.sendShardCollected = originalSendShard;
+            if (shardWasSent && this.collectibles?.items) {
+              this.collectibles.items.forEach((item, index) => {
+                if (item.collected && !beforeCollected[index]) {
+                  originalSendShard.call(network, index, item.type);
+                }
+              });
+            }
+          }
+
+          sanitizePlayer(this.ember);
+          sanitizePlayer(this.tide);
+
+          // Host owns the shared puzzle world. This keeps boxes, switches,
+          // doors, moving lifts and collectibles identical on both clients.
+          if (this.isOnline && network.playerSlot === 'p1' && this.mechanisms) {
+            const m = this.mechanisms;
+            const snapshot = {
+              pushBoxes: m.pushBoxes.map((b) => ({ id: b.id, x: b.x, y: b.y, vy: b.vy, isGrounded: b.isGrounded })),
+              pressurePlates: m.pressurePlates.map((p) => ({ id: p.id, isPressed: p.isPressed })),
+              levers: m.levers.map((l) => ({ id: l.id, isOn: l.isOn })),
+              doors: m.doors.map((d) => ({ id: d.id, isOpen: d.isOpen, openRatio: d.openRatio, currentX: d.currentX, currentY: d.currentY, solid: d.solid })),
+              movingPlatforms: m.movingPlatforms.map((p) => ({ id: p.id, x: p.x, y: p.y, currentIndex: p.currentIndex, targetIndex: p.targetIndex, isActive: p.isActive, dx: p.dx, dy: p.dy })),
+              collectibles: this.collectibles?.items?.map((x) => ({ collected: !!x.collected })) || []
+            };
+            const signature = JSON.stringify(snapshot);
+            if (signature !== lastWorldSignature) {
+              lastWorldSignature = signature;
+              network.sendPuzzleAction('world_snapshot', snapshot);
+            }
+          }
+        };
+
+        engine.__emberTideWorldPatch = true;
+        return true;
+      };
+
+      const patchRemoteSafety = () => {
+        const engine = window.app?.engine;
+        if (!engine?.ember || !engine?.tide) return false;
+
+        [engine.ember, engine.tide].forEach((player) => {
+          if (player.__emberTideRemoteSafety) return;
+          const originalApply = player.applyRemoteState.bind(player);
+          player.applyRemoteState = (state) => {
+            if (state && !state.isDead && !state.isVictory) {
+              const dx = (Number(state.x) || 0) - player.x;
+              const dy = (Number(state.y) || 0) - player.y;
+              const distance = Math.hypot(dx, dy);
+              if (distance > 180) {
+                const scale = 180 / distance;
+                state = { ...state, x: player.x + dx * scale, y: player.y + dy * scale };
+              }
+            }
+            originalApply(state);
+          };
+          player.__emberTideRemoteSafety = true;
+        });
         return true;
       };
 
       const timer = setInterval(() => {
-        const inputReady = installMobileInput();
-        const gameReady = patchGame();
-        if (inputReady && gameReady) clearInterval(timer);
+        const ready = installMobileInput();
+        const hazards = patchHazards();
+        const world = patchOnlineWorld();
+        const remote = patchRemoteSafety();
+        if (ready && hazards && world && remote) clearInterval(timer);
       }, 50);
-      setTimeout(() => clearInterval(timer), 15000);
+      setTimeout(() => clearInterval(timer), 20000);
     })
     .catch((error) => console.error('Ember & Tide failed to load:', error));
 })();
