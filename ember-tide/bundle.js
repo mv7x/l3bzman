@@ -3,15 +3,72 @@
 (function () {
   const style = document.createElement('style');
   style.textContent = `
-    @media (pointer: coarse), (hover: none) {
-      .touch-controls-layer { display: flex !important; }
-      .touch-btn { -webkit-tap-highlight-color: transparent; }
+    @media (pointer: coarse), (hover: none), (max-width: 1024px) {
+      .touch-controls-layer { display: flex !important; pointer-events: none !important; z-index: 100 !important; }
+      .touch-dpad, .touch-actions { pointer-events: auto !important; }
+      .touch-btn {
+        pointer-events: auto !important;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        touch-action: none !important;
+      }
     }
   `;
   document.head.appendChild(style);
 
   import('./src/app.js')
     .then(() => {
+      const installMobileInput = () => {
+        const app = window.app;
+        if (!app || !app.engine || !app.engine.input) return false;
+        const input = app.engine.input;
+        if (input.__reliableMobileInputInstalled) return true;
+
+        const bindings = {
+          'touch-ember-left': 'emberLeft',
+          'touch-ember-right': 'emberRight',
+          'touch-ember-jump': 'emberJump',
+          'touch-tide-left': 'tideLeft',
+          'touch-tide-right': 'tideRight',
+          'touch-tide-jump': 'tideJump'
+        };
+
+        Object.entries(bindings).forEach(([id, action]) => {
+          const button = document.getElementById(id);
+          if (!button) return;
+
+          const press = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            input.setTouchInput(action, true);
+            if (event.pointerId != null && button.setPointerCapture) {
+              try { button.setPointerCapture(event.pointerId); } catch (_) {}
+            }
+          };
+
+          const release = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            input.setTouchInput(action, false);
+          };
+
+          button.addEventListener('pointerdown', press, { passive: false });
+          button.addEventListener('pointerup', release, { passive: false });
+          button.addEventListener('pointercancel', release, { passive: false });
+          button.addEventListener('lostpointercapture', release, { passive: false });
+          button.addEventListener('contextmenu', (event) => event.preventDefault());
+        });
+
+        const clearTouch = () => input.resetTouch();
+        window.addEventListener('blur', clearTouch);
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) clearTouch();
+        });
+
+        input.__reliableMobileInputInstalled = true;
+        return true;
+      };
+
       const patchGame = () => {
         const app = window.app;
         const hazards = app && app.engine && app.engine.hazards;
@@ -27,8 +84,6 @@
           const tide = players.find((p) => p && p.type === 'tide' && !p.isDead && !p.isVictory);
           const touchingTide = !!(ember && tide && overlap(ember.getHitbox(), tide.getHitbox()));
 
-          // Ember and Tide can touch each other safely. In particular, Ember should
-          // not be killed by the water hazard merely because Ember is touching Tide.
           const originalHazards = this.hazards;
           this.hazards = originalHazards.map((h) => ({
             ...h,
@@ -42,12 +97,12 @@
         return true;
       };
 
-      if (!patchGame()) {
-        const timer = setInterval(() => {
-          if (patchGame()) clearInterval(timer);
-        }, 50);
-        setTimeout(() => clearInterval(timer), 10000);
-      }
+      const timer = setInterval(() => {
+        const inputReady = installMobileInput();
+        const gameReady = patchGame();
+        if (inputReady && gameReady) clearInterval(timer);
+      }, 50);
+      setTimeout(() => clearInterval(timer), 15000);
     })
     .catch((error) => console.error('Ember & Tide failed to load:', error));
 })();
