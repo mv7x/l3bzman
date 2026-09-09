@@ -32,9 +32,10 @@ export const level5 = {
     { x: 600, y: 640, width: 380, height: 24, solid: true },
     { x: 1100, y: 640, width: 388, height: 24, solid: true },
 
-    // Lower ledges leave safe routing space beneath elevated green hazards
-    { x: 280, y: 620, width: 140, height: 20, solid: true },
-    { x: 780, y: 460, width: 140, height: 20, solid: true },
+    // Solid floors directly beneath the elevated green acid pools.
+    // 42px clearance remains for a player to pass underneath.
+    { x: 280, y: 602, width: 140, height: 20, solid: true },
+    { x: 780, y: 422, width: 140, height: 20, solid: true },
 
     { x: 60, y: 460, width: 380, height: 24, solid: true },
     { x: 560, y: 460, width: 440, height: 24, solid: true },
@@ -46,6 +47,7 @@ export const level5 = {
   ],
 
   hazards: [
+    // Original bottom basin sizes are preserved.
     { type: 'lava', x: 260, y: 834, width: 180, height: 26 },
     { type: 'lava', x: 660, y: 834, width: 180, height: 26 },
     { type: 'water', x: 1100, y: 834, width: 160, height: 26 },
