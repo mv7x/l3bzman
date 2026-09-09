@@ -23,10 +23,6 @@
 
   import('./src/app.js')
     .then(async () => {
-      // app.js registers its constructor on window's DOMContentLoaded event.
-      // Because this file is loaded at the end of <body>, the event may already
-      // have fired before the dynamic module finishes loading. Re-fire it on
-      // WINDOW (not document) so app.js's listener is actually invoked.
       if (domLoaded && !window.app) {
         window.dispatchEvent(new Event('DOMContentLoaded'));
       }
@@ -52,7 +48,7 @@
 
           const timestamp = Number(state.t) || 0;
           if (timestamp && this.__remoteLastTimestamp && timestamp <= this.__remoteLastTimestamp) {
-            return; // Ignore stale/out-of-order Firebase snapshots.
+            return;
           }
           if (timestamp) this.__remoteLastTimestamp = timestamp;
 
@@ -71,7 +67,7 @@
             vy: this.targetVy,
             facing: this.targetFacing,
             grounded: !!state.isGrounded,
-            t: timestamp || performance.now()
+            t: timestamp || Date.now()
           };
 
           this.__remoteSnapshots.push(snapshot);
@@ -118,11 +114,9 @@
           }
 
           const snapshots = this.__remoteSnapshots || [];
-          const now = Date.now();
-          const interpolationDelay = 90;
-          const renderTime = now - interpolationDelay;
+          const renderTime = Date.now() - 90;
 
-          if (snapshots.length >= 2 && Number.isFinite(snapshots[0].t)) {
+          if (snapshots.length >= 2) {
             let older = snapshots[0];
             let newer = snapshots[snapshots.length - 1];
 
@@ -140,8 +134,8 @@
             let desiredX = older.x + (newer.x - older.x) * alpha;
             let desiredY = older.y + (newer.y - older.y) * alpha;
 
-            // If the network is temporarily late, extrapolate only a short
-            // distance. Never allow a single bad snapshot to teleport a player.
+            // Short extrapolation during a late packet, never an unlimited
+            // prediction that can throw the remote player across the map.
             if (renderTime > newer.t) {
               const extra = Math.min((renderTime - newer.t) / 1000, 0.12);
               desiredX = newer.x + newer.vx * extra;
@@ -157,11 +151,9 @@
               this.x += dx * smoothing;
               this.y += dy * smoothing;
             } else {
-              // Large non-death corrections are almost certainly a stale or
-              // corrupt snapshot. Hold position and wait for a sane packet.
-              // Respawns are handled explicitly in applyRemoteState().
-              this.x += Math.max(-70, Math.min(70, dx)) * Math.min(1, 10 * dt);
-              this.y += Math.max(-70, Math.min(70, dy)) * Math.min(1, 10 * dt);
+              // Do not chase a suspicious/stale snapshot. The next valid
+              // packet will move the player again. This removes map-wide
+              // teleports caused by a single bad RTDB update.
             }
           } else if (snapshots.length === 1) {
             const s = snapshots[0];
