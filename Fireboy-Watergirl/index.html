@@ -17,7 +17,7 @@
             .room-card p { margin:0 0 24px; color:#aeb9c8; line-height:1.5; }
             .room-input { width:100%; height:48px; margin-bottom:12px; padding:0 15px; border:1px solid #344258; border-radius:12px; outline:none; background:#0b111b; color:#fff; font-size:16px; }
             .room-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-            .room-btn { height:48px; border:0; border-radius:12px; cursor:pointer; color:#fff; font-weight:700; font-size:15px; background:#2563eb; }
+            .room-btn { height:48px; border:0; border-radius:12px; cursor:pointer; color:#fff; font-weight:700; font-size:15px; background:#2563eb; text-decoration:none; display:flex; align-items:center; justify-content:center; }
             .room-btn.secondary { background:#263449; }
             .room-btn:disabled { opacity:.45; cursor:not-allowed; }
             .room-message { min-height:22px; margin-top:16px; color:#aeb9c8; font-size:14px; }
@@ -30,6 +30,7 @@
             .player-slot small { display:block; color:#8290a4; margin-bottom:6px; }
             .player-slot strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
             .room-wait-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+            .hub-link { width:100%; margin-top:10px; }
             @media (max-width:520px) { .room-actions,.room-wait-actions,.players { grid-template-columns:1fr; } .room-card { padding:22px; } }
         </style>
     </head>
@@ -42,6 +43,8 @@
                     <button id="local-play" class="room-btn">Local Play</button>
                     <button id="online-play" class="room-btn secondary">Online Play</button>
                 </div>
+                <a class="room-btn secondary hub-link" href="../index.html">← Back to Game Hub</a>
+                <div id="room-message-setup" class="room-message"></div>
             </div>
         </section>
 
@@ -56,7 +59,8 @@
                         <button id="create-room" class="room-btn">Create Room</button>
                         <button id="join-room" class="room-btn secondary">Join Room</button>
                     </div>
-                    <button id="back-mode" class="room-btn secondary" style="width:100%;margin-top:10px">Back</button>
+                    <button id="back-mode" class="room-btn secondary hub-link">Back</button>
+                    <a class="room-btn secondary hub-link" href="../index.html">← Game Hub</a>
                     <div id="room-message-setup" class="room-message">Create a room or enter a room code.</div>
                 </div>
                 <div id="room-waiting" class="hidden">
@@ -68,7 +72,8 @@
                         <div class="player-slot"><small>💧 Watergirl</small><strong id="guest-name">Waiting for player...</strong></div>
                     </div>
                     <div class="room-wait-actions"><button id="copy-room" class="room-btn secondary">Copy Invite</button><button id="start-game" class="room-btn" disabled>Start Game</button></div>
-                    <button id="leave-room" class="room-btn secondary" style="width:100%;margin-top:10px">Leave Room</button>
+                    <button id="leave-room" class="room-btn secondary hub-link">Leave Room</button>
+                    <a class="room-btn secondary hub-link" href="../index.html">← Game Hub</a>
                     <div id="room-message-waiting" class="room-message"></div>
                 </div>
             </div>
