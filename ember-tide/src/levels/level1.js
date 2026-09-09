@@ -31,11 +31,11 @@ export const level1 = {
     { x: 140, y: 600, width: 280, height: 20, solid: true },
     { x: 440, y: 540, width: 320, height: 20, solid: true },
 
-    // Tier 2 - Mid tier; the acid pool has a solid ledge underneath it.
+    // Tier 2 - Mid tier; elevated acid has a solid ledge below it.
     { x: 160, y: 440, width: 440, height: 20, solid: true },
     { x: 620, y: 460, width: 380, height: 20, solid: true },
-    // 42px clearance below the acid so both players can pass underneath it.
-    { x: 740, y: 606, width: 180, height: 20, solid: true },
+    // 80px clearance between acid and its support floor, safely above player height.
+    { x: 740, y: 600, width: 180, height: 20, solid: true },
     { x: 1020, y: 480, width: 228, height: 20, solid: true },
 
     { x: 300, y: 280, width: 340, height: 20, solid: true },
@@ -51,8 +51,8 @@ export const level1 = {
     // Keep the original 180px lava and water basin sizes.
     { type: 'lava', x: 560, y: 684, width: 180, height: 24 },
     { type: 'water', x: 740, y: 684, width: 180, height: 24 },
-    // Elevated toxic pool with solid ground beneath it.
-    { type: 'acid', x: 760, y: 544, width: 160, height: 20 }
+    // Elevated toxic pool: solid floor below with enough clearance to pass underneath.
+    { type: 'acid', x: 760, y: 520, width: 160, height: 20 }
   ],
 
   mechanisms: {
