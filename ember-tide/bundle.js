@@ -23,34 +23,19 @@
             a.x < b.x + b.width && a.x + a.width > b.x &&
             a.y < b.y + b.height && a.y + a.height > b.y;
 
-          const filteredPlayers = players.map((p) => {
-            if (p && p.type === 'ember' && !p.isDead && !p.isVictory) {
-              const tide = players.find((other) => other && other.type === 'tide' && !other.isDead && !other.isVictory);
-              if (tide && overlap(p.getHitbox(), tide.getHitbox())) {
-                return { ...p, __touchingTide: true };
-              }
-            }
-            return p;
-          });
+          const ember = players.find((p) => p && p.type === 'ember' && !p.isDead && !p.isVictory);
+          const tide = players.find((p) => p && p.type === 'tide' && !p.isDead && !p.isVictory);
+          const touchingTide = !!(ember && tide && overlap(ember.getHitbox(), tide.getHitbox()));
 
-          // Temporarily ignore water damage for Ember while Ember is directly touching Tide.
+          // Ember and Tide can touch each other safely. In particular, Ember should
+          // not be killed by the water hazard merely because Ember is touching Tide.
           const originalHazards = this.hazards;
           this.hazards = originalHazards.map((h) => ({
             ...h,
-            lethalTo: h.type === 'water' ? ['__never__'] : h.lethalTo
+            lethalTo: h.type === 'water' && touchingTide ? ['__never__'] : h.lethalTo
           }));
-          originalUpdate(dt, filteredPlayers);
+          originalUpdate(dt, players);
           this.hazards = originalHazards;
-
-          // Apply the normal water rule when Ember is not touching Tide.
-          for (const h of originalHazards) {
-            if (h.type !== 'water') continue;
-            const ember = players.find((p) => p && p.type === 'ember' && !p.isDead && !p.isVictory);
-            const tide = players.find((p) => p && p.type === 'tide' && !p.isDead && !p.isVictory);
-            if (!ember || !tide || overlap(ember.getHitbox(), tide.getHitbox())) continue;
-            const hazardHitbox = { x: h.x + 4, y: h.y + 6, width: h.width - 8, height: h.height - 6 };
-            if (overlap(ember.getHitbox(), hazardHitbox)) ember.die(h.type);
-          }
         };
 
         hazards.__emberTideTouchPatch = true;
