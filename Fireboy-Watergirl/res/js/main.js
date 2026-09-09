@@ -51,6 +51,16 @@ function setRoomPanel(room) {
     }
 }
 
+function autoSelectFirstLevel() {
+    const canvas = $("canvas");
+    const rect = canvas.getBoundingClientRect();
+    const x = rect.left + rect.width * 0.438;
+    const y = rect.top + rect.height * 0.9;
+
+    canvas.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: x, clientY: y }));
+    canvas.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: x, clientY: y }));
+}
+
 function beginOnlineGame() {
     if (gameStarted) return;
     gameStarted = true;
@@ -62,6 +72,7 @@ function beginOnlineGame() {
     history.replaceState(null, "", `${window.location.pathname}?room=${info.roomCode}`);
 
     playGame();
+    setTimeout(autoSelectFirstLevel, 80);
 }
 
 async function create() {
