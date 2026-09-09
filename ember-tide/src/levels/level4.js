@@ -1,6 +1,5 @@
 // =========================================================
-// Level 4: Desert & Sandstone Temple (Theme: Desert)
-// Sun-baked sandstone, golden dunes & reciprocal labyrinths
+// Level 4: Desert & Sandstone Temple
 // =========================================================
 
 export const level4 = {
@@ -22,17 +21,18 @@ export const level4 = {
     { x: 0, y: 0, width: 1440, height: 32, solid: true },
 
     { x: 0, y: 640, width: 220, height: 80, solid: true },
+    { x: 220, y: 680, width: 160, height: 40, solid: true },
     { x: 380, y: 640, width: 180, height: 80, solid: true },
+    { x: 560, y: 680, width: 160, height: 40, solid: true },
     { x: 720, y: 640, width: 220, height: 80, solid: true },
+    { x: 940, y: 680, width: 160, height: 40, solid: true },
     { x: 1100, y: 640, width: 340, height: 80, solid: true },
 
     { x: 180, y: 460, width: 380, height: 24, solid: true },
     { x: 680, y: 460, width: 440, height: 24, solid: true },
-
     { x: 80, y: 280, width: 340, height: 24, solid: true },
     { x: 540, y: 260, width: 320, height: 24, solid: true },
     { x: 960, y: 280, width: 448, height: 24, solid: true },
-
     { x: 1140, y: 140, width: 268, height: 24, solid: true }
   ],
 
