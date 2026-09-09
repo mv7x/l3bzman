@@ -17,7 +17,9 @@ let gameStarted = false;
 let roomWatching = false;
 
 function showLobbyMessage(message, error = false) {
-    const box = $("room-message");
+    const box = $("room-waiting").classList.contains("hidden")
+        ? $("room-message-setup")
+        : $("room-message-waiting");
     if (!box) return;
     box.textContent = message;
     box.classList.toggle("error", error);
@@ -45,11 +47,11 @@ function setRoomPanel(room) {
             ready ? "Your friend joined. Start the game when you're ready." : "Send the room code to your friend."
         );
     } else {
-        showLobbyMessage(ready ? "Connected to the host." : "Joining room...");
+        showLobbyMessage("Connected to the room. Waiting for the host to start...");
     }
 }
 
-function beginOnlineGame(level = 1) {
+function beginOnlineGame() {
     if (gameStarted) return;
     gameStarted = true;
 
@@ -57,16 +59,8 @@ function beginOnlineGame(level = 1) {
     document.body.classList.add("playing-online");
     $("room-lobby").classList.add("hidden");
     $("canvas").classList.remove("hidden");
-
-    // Keep both clients on the same first level. The host can later drive level changes.
     history.replaceState(null, "", `${window.location.pathname}?room=${info.roomCode}`);
 
-    if (info.role === "host") {
-        showLobbyMessage(`Room ${info.roomCode} started.`);
-    }
-
-    // The original game opens its level menu. Networking is already active, so both
-    // players can see and control their assigned character once a level is selected.
     playGame();
 }
 
@@ -77,6 +71,7 @@ async function create() {
         return;
     }
 
+    localStorage.setItem("fireboy_watergirl_name", name);
     $("create-room").disabled = true;
     $("join-room").disabled = true;
     try {
@@ -103,11 +98,11 @@ async function join() {
         return;
     }
 
+    localStorage.setItem("fireboy_watergirl_name", name);
     $("create-room").disabled = true;
     $("join-room").disabled = true;
     try {
         await joinRoom(code, name);
-        setRoomPanel({ code, role: "guest", host: null, guest: { name } });
         watch();
     } catch (error) {
         showLobbyMessage(error.message || "Could not join room.", true);
@@ -126,6 +121,7 @@ function watch() {
             gameStarted = false;
             $("room-lobby").classList.remove("hidden");
             $("room-waiting").classList.add("hidden");
+            $("room-setup").classList.remove("hidden");
             showLobbyMessage("The room was closed.", true);
             return;
         }
@@ -133,9 +129,7 @@ function watch() {
         const info = getRoomInfo();
         setRoomPanel({ ...room, code: info.roomCode, role: info.role });
 
-        if (room.status === "playing") {
-            beginOnlineGame(Number(room.level) || 1);
-        }
+        if (room.status === "playing") beginOnlineGame();
     });
 }
 
@@ -181,13 +175,6 @@ async function boot() {
     if (roomFromUrl) $("room-code-input").value = roomFromUrl;
 
     $("player-name").value = localStorage.getItem("fireboy_watergirl_name") || "";
-    $("player-name").addEventListener("change", (event) => {
-        localStorage.setItem("fireboy_watergirl_name", event.target.value.trim());
-    });
-
-    $("player-name").addEventListener("keydown", (event) => {
-        if (event.key === "Enter") create();
-    });
 }
 
 window.addEventListener("load", boot);
