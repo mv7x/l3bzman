@@ -1,6 +1,5 @@
 // =========================================================
-// Level 2: Subterranean Flooded Forge (Theme: Forge)
-// Dark iron masonry, glowing molten vents & hydraulic lifts
+// Level 2: Subterranean Flooded Forge
 // =========================================================
 
 export const level2 = {
@@ -22,8 +21,11 @@ export const level2 = {
     { x: 0, y: 0, width: 1360, height: 32, solid: true },
 
     { x: 0, y: 640, width: 240, height: 80, solid: true },
+    { x: 240, y: 680, width: 180, height: 40, solid: true },
     { x: 420, y: 640, width: 180, height: 80, solid: true },
+    { x: 600, y: 680, width: 180, height: 40, solid: true },
     { x: 780, y: 640, width: 200, height: 80, solid: true },
+    { x: 980, y: 680, width: 180, height: 40, solid: true },
     { x: 1160, y: 640, width: 200, height: 80, solid: true },
 
     { x: 160, y: 480, width: 200, height: 24, solid: true },
@@ -33,7 +35,6 @@ export const level2 = {
     { x: 80, y: 300, width: 280, height: 24, solid: true },
     { x: 560, y: 260, width: 240, height: 24, solid: true },
     { x: 980, y: 240, width: 348, height: 24, solid: true },
-
     { x: 1060, y: 120, width: 268, height: 24, solid: true }
   ],
 
