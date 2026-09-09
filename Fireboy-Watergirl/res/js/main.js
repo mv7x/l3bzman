@@ -4,7 +4,7 @@ import { loadData, loadDataFromLocalStorage } from "./helpers.js";
 const $ = (id) => document.getElementById(id);
 let gameStarted = false;
 let roomWatching = false;
-let dataReady = false;
+let booted = false;
 let network = null;
 
 async function getNetwork() {
@@ -14,7 +14,8 @@ async function getNetwork() {
 }
 
 function showLobbyMessage(message, error = false) {
-    const box = $("room-waiting").classList.contains("hidden") ? $("room-message-setup") : $("room-message-waiting");
+    const waiting = $("room-waiting");
+    const box = waiting?.classList.contains("hidden") ? $("room-message-setup") : $("room-message-waiting");
     if (!box) return;
     box.textContent = message;
     box.classList.toggle("error", error);
@@ -26,12 +27,14 @@ async function startLocalGame() {
     try {
         await window.fireboyWatergirlDataReady;
     } catch (error) {
-        showLobbyMessage("Game files could not be loaded. Check the Fireboy-Watergirl folder.", true);
+        showLobbyMessage(error.message || "Game files could not be loaded. Check the Fireboy-Watergirl folder.", true);
         return;
     }
+
     if (gameStarted) return;
     gameStarted = true;
     $("mode-menu").classList.add("hidden");
+    $("room-lobby").classList.add("hidden");
     $("canvas").classList.remove("hidden");
     playGame();
 }
@@ -69,6 +72,7 @@ async function beginOnlineGame() {
         showLobbyMessage(error.message || "Game could not start.", true);
         return;
     }
+
     if (gameStarted) return;
     gameStarted = true;
     const info = network.getRoomInfo();
@@ -180,7 +184,10 @@ async function leave() {
 }
 
 async function boot() {
-    // Local Play is completely independent from Firebase/network.js.
+    if (booted) return;
+    booted = true;
+
+    // Register UI handlers immediately. Do not wait for Firebase or game data.
     $("local-play").addEventListener("click", startLocalGame);
     $("online-play").addEventListener("click", () => {
         $("mode-menu").classList.add("hidden");
@@ -207,15 +214,15 @@ async function boot() {
 
     window.fireboyWatergirlDataReady = loadData().then(() => {
         loadDataFromLocalStorage();
-        dataReady = true;
     });
 
     try {
         await window.fireboyWatergirlDataReady;
     } catch (error) {
-        dataReady = false;
         showLobbyMessage(error.message || "Game files could not be loaded. Check the Fireboy-Watergirl folder.", true);
     }
 }
 
-window.addEventListener("load", boot);
+// main.js is loaded at the end of index.html, so the DOM is already available.
+// Start immediately instead of waiting for window.load.
+boot();
