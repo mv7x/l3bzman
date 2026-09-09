@@ -54,7 +54,7 @@ function setRoomPanel(room) {
 function autoSelectFirstLevel() {
     const canvas = $("canvas");
     const rect = canvas.getBoundingClientRect();
-    const x = rect.left + rect.width * 0.438;
+    const x = rect.left + rect.width * 0.48;
     const y = rect.top + rect.height * 0.9;
 
     canvas.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: x, clientY: y }));
