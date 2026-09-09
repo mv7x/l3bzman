@@ -1,6 +1,5 @@
 // =========================================================
-// Level 5: The Molten Core (Theme: Core)
-// Obsidian stone, pulsing magma veins & grand finale gateway
+// Level 5: The Molten Core
 // =========================================================
 
 export const level5 = {
@@ -22,22 +21,27 @@ export const level5 = {
     { x: 0, y: 0, width: 1520, height: 32, solid: true },
 
     { x: 0, y: 820, width: 260, height: 80, solid: true },
+    { x: 260, y: 860, width: 180, height: 40, solid: true },
     { x: 440, y: 820, width: 220, height: 80, solid: true },
+    { x: 660, y: 860, width: 180, height: 40, solid: true },
     { x: 840, y: 820, width: 260, height: 80, solid: true },
+    { x: 1100, y: 860, width: 160, height: 40, solid: true },
     { x: 1260, y: 820, width: 260, height: 80, solid: true },
 
     { x: 140, y: 640, width: 340, height: 24, solid: true },
     { x: 600, y: 640, width: 380, height: 24, solid: true },
     { x: 1100, y: 640, width: 388, height: 24, solid: true },
 
+    // Lower ledges leave safe routing space beneath elevated green hazards
+    { x: 280, y: 620, width: 140, height: 20, solid: true },
+    { x: 780, y: 460, width: 140, height: 20, solid: true },
+
     { x: 60, y: 460, width: 380, height: 24, solid: true },
     { x: 560, y: 460, width: 440, height: 24, solid: true },
     { x: 1120, y: 460, width: 368, height: 24, solid: true },
-
     { x: 180, y: 280, width: 380, height: 24, solid: true },
     { x: 660, y: 260, width: 360, height: 24, solid: true },
     { x: 1140, y: 280, width: 348, height: 24, solid: true },
-
     { x: 560, y: 120, width: 440, height: 24, solid: true }
   ],
 
@@ -45,8 +49,8 @@ export const level5 = {
     { type: 'lava', x: 260, y: 834, width: 180, height: 26 },
     { type: 'lava', x: 660, y: 834, width: 180, height: 26 },
     { type: 'water', x: 1100, y: 834, width: 160, height: 26 },
-    { type: 'acid', x: 300, y: 620, width: 100, height: 20 },
-    { type: 'acid', x: 800, y: 440, width: 100, height: 20 },
+    { type: 'acid', x: 300, y: 540, width: 100, height: 20 },
+    { type: 'acid', x: 800, y: 360, width: 100, height: 20 },
     { type: 'spikes', x: 700, y: 620, width: 60, height: 20, orientation: 'up' },
     { type: 'spikes', x: 300, y: 260, width: 60, height: 20, orientation: 'up' }
   ],
