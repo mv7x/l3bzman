@@ -11,9 +11,9 @@ export class Camera {
     this.y = 0;
     this.zoom = 1;
     this.targetZoom = 1;
-    this.levelWidth = 1520;
-    this.levelHeight = 900;
-    this.renderScale = 0.8;
+    this.levelWidth = 1280;
+    this.levelHeight = 720;
+    this.renderScale = 1;
     this.shakeIntensity = 0;
     this.shakeDuration = 0;
   }
@@ -31,19 +31,12 @@ export class Camera {
   }
 
   fitLevel() {
-    // Campaign rooms use a fixed single-screen composition.
-    // The level data is authored at 1520x900; render it at 80%
-    // so the complete room fits inside the 1280x720 playfield.
     this.zoom = 1;
     this.targetZoom = 1;
     this.renderScale = Math.min(
       this.viewportWidth / this.levelWidth,
       this.viewportHeight / this.levelHeight
     );
-    // Keep a small, consistent margin so the room never touches
-    // the canvas edges and never changes size during gameplay.
-    this.renderScale = Math.min(this.renderScale, 0.8);
-
     this.x = 0;
     this.y = 0;
   }
@@ -54,7 +47,6 @@ export class Camera {
   }
 
   update(dt) {
-    // Never dynamically zoom based on player distance or death state.
     this.zoom = 1;
     this.targetZoom = 1;
 
@@ -77,8 +69,6 @@ export class Camera {
       shakeY = (Math.random() - 0.5) * this.shakeIntensity * 2;
     }
 
-    // Scale the authored 1520x900 room down to fit the full
-    // 1280x720 viewport, keeping the entire puzzle visible.
     const scale = this.renderScale;
     const scaledWidth = this.levelWidth * scale;
     const scaledHeight = this.levelHeight * scale;
