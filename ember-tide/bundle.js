@@ -22,13 +22,171 @@
   }
 
   import('./src/app.js')
-    .then(() => {
+    .then(async () => {
       // app.js registers its constructor on window's DOMContentLoaded event.
       // Because this file is loaded at the end of <body>, the event may already
       // have fired before the dynamic module finishes loading. Re-fire it on
       // WINDOW (not document) so app.js's listener is actually invoked.
       if (domLoaded && !window.app) {
         window.dispatchEvent(new Event('DOMContentLoaded'));
+      }
+
+      // ------------------------------------------------------------
+      // Online replication hardening
+      // ------------------------------------------------------------
+      // Firebase RTDB is not a deterministic 60 FPS transport. Packets can
+      // arrive in bursts, be delayed, or contain an older snapshot after a
+      // restart. The original client immediately lerped every packet, which
+      // made the remote player jitter, sink visually into the level, or jump
+      // to a stale position. Keep a tiny timestamped snapshot buffer and
+      // render the remote player slightly behind the newest packet instead.
+      try {
+        const { Player } = await import('./src/entities/player.js');
+
+        Player.prototype.applyRemoteState = function (state) {
+          if (!state) return;
+
+          const x = Number(state.x);
+          const y = Number(state.y);
+          if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+
+          const timestamp = Number(state.t) || 0;
+          if (timestamp && this.__remoteLastTimestamp && timestamp <= this.__remoteLastTimestamp) {
+            return; // Ignore stale/out-of-order Firebase snapshots.
+          }
+          if (timestamp) this.__remoteLastTimestamp = timestamp;
+
+          this.targetX = x;
+          this.targetY = y;
+          this.targetVx = Number(state.vx) || 0;
+          this.targetVy = Number(state.vy) || 0;
+          this.targetFacing = state.facing === -1 ? -1 : 1;
+
+          if (!Array.isArray(this.__remoteSnapshots)) this.__remoteSnapshots = [];
+
+          const snapshot = {
+            x,
+            y,
+            vx: this.targetVx,
+            vy: this.targetVy,
+            facing: this.targetFacing,
+            grounded: !!state.isGrounded,
+            t: timestamp || performance.now()
+          };
+
+          this.__remoteSnapshots.push(snapshot);
+          if (this.__remoteSnapshots.length > 8) this.__remoteSnapshots.shift();
+
+          // A death/respawn is an intentional discontinuity. Snap only for
+          // those transitions; ordinary movement is always interpolated.
+          if (state.isDead && !this.isDead) {
+            this.die('remote');
+          } else if (!state.isDead && this.isDead) {
+            this.x = x;
+            this.y = y;
+            this.targetX = x;
+            this.targetY = y;
+            this.__remoteSnapshots.length = 0;
+            this.respawn();
+          }
+
+          if (state.isVictory) this.isVictory = true;
+          this.isGrounded = !!state.isGrounded;
+          this.animTime = state.animTime || this.animTime;
+          if (state.scaleX !== undefined) this.scaleX = state.scaleX;
+          if (state.scaleY !== undefined) this.scaleY = state.scaleY;
+
+          if (!this.__remoteInitialized) {
+            this.x = x;
+            this.y = y;
+            this.__remoteInitialized = true;
+          }
+        };
+
+        Player.prototype.updateRemote = function (dt) {
+          this.animTime += dt;
+
+          if (this.isDead) {
+            this.deathTimer -= dt;
+            if (this.deathTimer <= 0) this.respawn();
+            return;
+          }
+
+          if (this.isRespawning) {
+            this.respawnTimer -= dt;
+            if (this.respawnTimer <= 0) this.isRespawning = false;
+          }
+
+          const snapshots = this.__remoteSnapshots || [];
+          const now = Date.now();
+          const interpolationDelay = 90;
+          const renderTime = now - interpolationDelay;
+
+          if (snapshots.length >= 2 && Number.isFinite(snapshots[0].t)) {
+            let older = snapshots[0];
+            let newer = snapshots[snapshots.length - 1];
+
+            for (let i = 1; i < snapshots.length; i++) {
+              if (snapshots[i].t >= renderTime) {
+                newer = snapshots[i];
+                older = snapshots[i - 1];
+                break;
+              }
+            }
+
+            const span = Math.max(1, newer.t - older.t);
+            const alpha = Math.max(0, Math.min(1, (renderTime - older.t) / span));
+
+            let desiredX = older.x + (newer.x - older.x) * alpha;
+            let desiredY = older.y + (newer.y - older.y) * alpha;
+
+            // If the network is temporarily late, extrapolate only a short
+            // distance. Never allow a single bad snapshot to teleport a player.
+            if (renderTime > newer.t) {
+              const extra = Math.min((renderTime - newer.t) / 1000, 0.12);
+              desiredX = newer.x + newer.vx * extra;
+              desiredY = newer.y + newer.vy * extra;
+            }
+
+            const dx = desiredX - this.x;
+            const dy = desiredY - this.y;
+            const distance = Math.hypot(dx, dy);
+
+            if (distance <= 280) {
+              const smoothing = Math.min(1, 14 * dt);
+              this.x += dx * smoothing;
+              this.y += dy * smoothing;
+            } else {
+              // Large non-death corrections are almost certainly a stale or
+              // corrupt snapshot. Hold position and wait for a sane packet.
+              // Respawns are handled explicitly in applyRemoteState().
+              this.x += Math.max(-70, Math.min(70, dx)) * Math.min(1, 10 * dt);
+              this.y += Math.max(-70, Math.min(70, dy)) * Math.min(1, 10 * dt);
+            }
+          } else if (snapshots.length === 1) {
+            const s = snapshots[0];
+            const dx = s.x - this.x;
+            const dy = s.y - this.y;
+            const distance = Math.hypot(dx, dy);
+            if (distance <= 280) {
+              const smoothing = Math.min(1, 12 * dt);
+              this.x += dx * smoothing;
+              this.y += dy * smoothing;
+            }
+          }
+
+          const newest = snapshots[snapshots.length - 1];
+          if (newest) {
+            this.vx = newest.vx;
+            this.vy = newest.vy;
+            this.facing = newest.facing;
+            this.isGrounded = newest.grounded;
+            if (Math.abs(this.vx) > 20) this.walkCycle += dt * 14;
+            else this.walkCycle = 0;
+          }
+        };
+      } catch (syncPatchError) {
+        console.warn('Online replication hardening could not be installed:', syncPatchError);
       }
 
       const installMobileInput = () => {
