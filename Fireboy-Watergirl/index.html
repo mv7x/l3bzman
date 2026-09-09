@@ -40,8 +40,8 @@
                 <h1>🔥💧 Fireboy & Watergirl</h1>
                 <p>Choose how you want to play.</p>
                 <div class="room-actions">
-                    <button id="local-play" class="room-btn">Local Play</button>
-                    <button id="online-play" class="room-btn secondary">Online Play</button>
+                    <button id="local-play" type="button" class="room-btn" onclick="window.fireboyLocalPlay()">Local Play</button>
+                    <button id="online-play" type="button" class="room-btn secondary" onclick="window.fireboyOnlinePlay()">Online Play</button>
                 </div>
                 <a class="room-btn secondary hub-link" href="../index.html">← Back to Game Hub</a>
                 <div id="mode-message" class="room-message"></div>
@@ -56,10 +56,10 @@
                     <input id="player-name" class="room-input" maxlength="24" placeholder="Your name" autocomplete="nickname" />
                     <input id="room-code-input" class="room-input" maxlength="6" inputmode="numeric" placeholder="Room code" />
                     <div class="room-actions">
-                        <button id="create-room" class="room-btn">Create Room</button>
-                        <button id="join-room" class="room-btn secondary">Join Room</button>
+                        <button id="create-room" type="button" class="room-btn">Create Room</button>
+                        <button id="join-room" type="button" class="room-btn secondary">Join Room</button>
                     </div>
-                    <button id="back-mode" class="room-btn secondary hub-link">Back</button>
+                    <button id="back-mode" type="button" class="room-btn secondary hub-link" onclick="window.fireboyBack()">Back</button>
                     <a class="room-btn secondary hub-link" href="../index.html">← Game Hub</a>
                     <div id="room-message-setup" class="room-message">Create a room or enter a room code.</div>
                 </div>
@@ -71,8 +71,8 @@
                         <div class="player-slot"><small>🔥 Fireboy</small><strong id="host-name">Waiting...</strong></div>
                         <div class="player-slot"><small>💧 Watergirl</small><strong id="guest-name">Waiting for player...</strong></div>
                     </div>
-                    <div class="room-wait-actions"><button id="copy-room" class="room-btn secondary">Copy Invite</button><button id="start-game" class="room-btn" disabled>Start Game</button></div>
-                    <button id="leave-room" class="room-btn secondary hub-link">Leave Room</button>
+                    <div class="room-wait-actions"><button id="copy-room" type="button" class="room-btn secondary">Copy Invite</button><button id="start-game" type="button" class="room-btn" disabled>Start Game</button></div>
+                    <button id="leave-room" type="button" class="room-btn secondary hub-link">Leave Room</button>
                     <a class="room-btn secondary hub-link" href="../index.html">← Game Hub</a>
                     <div id="room-message-waiting" class="room-message"></div>
                 </div>
@@ -80,6 +80,42 @@
         </section>
 
         <canvas id="canvas" class="hidden"></canvas>
+
+        <!-- Direct UI fallback: the mode buttons work even if main.js event binding is delayed. -->
+        <script>
+            window.fireboyOnlinePlay = function () {
+                document.getElementById("mode-menu").classList.add("hidden");
+                document.getElementById("room-lobby").classList.remove("hidden");
+            };
+
+            window.fireboyBack = function () {
+                document.getElementById("room-lobby").classList.add("hidden");
+                document.getElementById("mode-menu").classList.remove("hidden");
+            };
+
+            window.fireboyLocalPlay = async function () {
+                const button = document.getElementById("local-play");
+                const message = document.getElementById("mode-message");
+                button.disabled = true;
+                message.textContent = "Loading game...";
+
+                try {
+                    const game = await import("./res/js/game.js");
+                    const helpers = await import("./res/js/helpers.js");
+                    await helpers.loadData();
+                    helpers.loadDataFromLocalStorage();
+                    document.getElementById("mode-menu").classList.add("hidden");
+                    document.getElementById("room-lobby").classList.add("hidden");
+                    document.getElementById("canvas").classList.remove("hidden");
+                    game.playGame();
+                } catch (error) {
+                    console.error("Fireboy-Watergirl failed to start:", error);
+                    message.textContent = "Game failed to load: " + (error.message || error);
+                    message.classList.add("error");
+                    button.disabled = false;
+                }
+            };
+        </script>
         <script src="./res/js/main.js" defer></script>
     </body>
 </html>
