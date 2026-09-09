@@ -1,11 +1,33 @@
-import { playGame } from "./game.js";
-import { loadData, loadDataFromLocalStorage } from "./helpers.js";
-
 const $ = (id) => document.getElementById(id);
+
 let gameStarted = false;
 let roomWatching = false;
-let booted = false;
 let network = null;
+let gameModule = null;
+let helpersModule = null;
+let dataReadyPromise = null;
+
+function showLobbyMessage(message, error = false) {
+    const waiting = $("room-waiting");
+    const box = waiting && !waiting.classList.contains("hidden") ? $("room-message-waiting") : $("room-message-setup");
+    if (!box) return;
+    box.textContent = message;
+    box.classList.toggle("error", error);
+    box.classList.toggle("success", !error);
+}
+
+async function ensureGameLoaded() {
+    if (!dataReadyPromise) {
+        dataReadyPromise = (async () => {
+            helpersModule = helpersModule || await import("./helpers.js");
+            await helpersModule.loadData();
+            helpersModule.loadDataFromLocalStorage();
+            gameModule = gameModule || await import("./game.js");
+            return gameModule;
+        })();
+    }
+    return dataReadyPromise;
+}
 
 async function getNetwork() {
     if (network) return network;
@@ -13,30 +35,25 @@ async function getNetwork() {
     return network;
 }
 
-function showLobbyMessage(message, error = false) {
-    const waiting = $("room-waiting");
-    const box = waiting?.classList.contains("hidden") ? $("room-message-setup") : $("room-message-waiting");
-    if (!box) return;
-    box.textContent = message;
-    box.classList.toggle("error", error);
-    box.classList.toggle("success", !error);
-}
-
 async function startLocalGame() {
     if (gameStarted) return;
-    try {
-        await window.fireboyWatergirlDataReady;
-    } catch (error) {
-        showLobbyMessage(error.message || "Game files could not be loaded. Check the Fireboy-Watergirl folder.", true);
-        return;
-    }
+    const button = $("local-play");
+    if (button) button.disabled = true;
+    showLobbyMessage("Loading game...");
 
-    if (gameStarted) return;
-    gameStarted = true;
-    $("mode-menu").classList.add("hidden");
-    $("room-lobby").classList.add("hidden");
-    $("canvas").classList.remove("hidden");
-    playGame();
+    try {
+        const game = await ensureGameLoaded();
+        if (gameStarted) return;
+        gameStarted = true;
+        $("mode-menu").classList.add("hidden");
+        $("room-lobby").classList.add("hidden");
+        $("canvas").classList.remove("hidden");
+        game.playGame();
+    } catch (error) {
+        console.error("Fireboy-Watergirl startup error:", error);
+        showLobbyMessage(error?.message || "The game could not start. Open the browser console for details.", true);
+        if (button) button.disabled = false;
+    }
 }
 
 function setRoomPanel(room) {
@@ -65,7 +82,7 @@ function autoSelectFirstLevel() {
 async function beginOnlineGame() {
     if (gameStarted) return;
     try {
-        await window.fireboyWatergirlDataReady;
+        await ensureGameLoaded();
         const net = await getNetwork();
         net.patchPlayerNetworking();
     } catch (error) {
@@ -80,7 +97,7 @@ async function beginOnlineGame() {
     $("room-lobby").classList.add("hidden");
     $("canvas").classList.remove("hidden");
     history.replaceState(null, "", `${window.location.pathname}?room=${info.roomCode}`);
-    playGame();
+    gameModule.playGame();
     setTimeout(autoSelectFirstLevel, 150);
 }
 
@@ -162,13 +179,9 @@ async function copyRoom() {
     try {
         const net = await getNetwork();
         const info = net.getRoomInfo();
-        try {
-            await navigator.clipboard.writeText(net.getInviteUrl());
-            showLobbyMessage("Room invite copied.");
-        } catch {
-            await navigator.clipboard.writeText(info.roomCode);
-            showLobbyMessage("Room code copied.");
-        }
+        const invite = net.getInviteUrl();
+        await navigator.clipboard.writeText(invite || info.roomCode);
+        showLobbyMessage("Room invite copied.");
     } catch (error) {
         showLobbyMessage(error.message || "Could not copy room.", true);
     }
@@ -183,46 +196,38 @@ async function leave() {
     }
 }
 
-async function boot() {
-    if (booted) return;
-    booted = true;
+function showMode() {
+    $("room-lobby").classList.add("hidden");
+    $("mode-menu").classList.remove("hidden");
+}
 
-    // Register UI handlers immediately. Do not wait for Firebase or game data.
-    $("local-play").addEventListener("click", startLocalGame);
-    $("online-play").addEventListener("click", () => {
-        $("mode-menu").classList.add("hidden");
-        $("room-lobby").classList.remove("hidden");
-    });
-    $("back-mode").addEventListener("click", () => {
-        $("room-lobby").classList.add("hidden");
-        $("mode-menu").classList.remove("hidden");
-    });
-    $("create-room").addEventListener("click", create);
-    $("join-room").addEventListener("click", join);
-    $("start-game").addEventListener("click", start);
-    $("copy-room").addEventListener("click", copyRoom);
-    $("leave-room").addEventListener("click", leave);
+function showOnline() {
+    $("mode-menu").classList.add("hidden");
+    $("room-lobby").classList.remove("hidden");
+}
+
+function boot() {
+    // No game or Firebase import happens here. The UI always gets its handlers.
+    $("local-play")?.addEventListener("click", startLocalGame);
+    $("online-play")?.addEventListener("click", showOnline);
+    $("back-mode")?.addEventListener("click", showMode);
+    $("create-room")?.addEventListener("click", create);
+    $("join-room")?.addEventListener("click", join);
+    $("start-game")?.addEventListener("click", start);
+    $("copy-room")?.addEventListener("click", copyRoom);
+    $("leave-room")?.addEventListener("click", leave);
 
     const params = new URLSearchParams(window.location.search);
     const roomFromUrl = params.get("room");
     if (roomFromUrl) {
         $("room-code-input").value = roomFromUrl;
-        $("mode-menu").classList.add("hidden");
-        $("room-lobby").classList.remove("hidden");
+        showOnline();
     }
     $("player-name").value = localStorage.getItem("fireboy_watergirl_name") || "";
-
-    window.fireboyWatergirlDataReady = loadData().then(() => {
-        loadDataFromLocalStorage();
-    });
-
-    try {
-        await window.fireboyWatergirlDataReady;
-    } catch (error) {
-        showLobbyMessage(error.message || "Game files could not be loaded. Check the Fireboy-Watergirl folder.", true);
-    }
 }
 
-// main.js is loaded at the end of index.html, so the DOM is already available.
-// Start immediately instead of waiting for window.load.
-boot();
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
+} else {
+    boot();
+}
