@@ -80,16 +80,15 @@ const jsonsFiles = [
 ];
 
 async function loadData() {
-    try {
+    const results = await Promise.all(
         jsonsFiles.map(async (jsonFile) => {
-            const file = await fetch(`./res/data/${jsonFile}.json`);
-            const data = await file.json();
+            const response = await fetch(`./res/data/${jsonFile}.json`, { cache: "no-store" });
+            if (!response.ok) throw new Error(`Failed to load ${jsonFile}.json`);
+            return [jsonFile, await response.json()];
+        })
+    );
 
-            gameData[jsonFile] = data;
-        });
-    } catch (err) {
-        console.log(err);
-    }
+    gameData = Object.fromEntries(results);
 }
 
 function loadDataFromLocalStorage() {
