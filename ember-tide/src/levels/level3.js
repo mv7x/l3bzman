@@ -1,6 +1,5 @@
 // =========================================================
-// Level 3: Silver & Crystal Palace (Theme: Silver)
-// Gleaming silver masonry, crystal platforms & vertical towers
+// Level 3: Silver & Crystal Palace
 // =========================================================
 
 export const level3 = {
@@ -22,17 +21,15 @@ export const level3 = {
     { x: 0, y: 0, width: 1280, height: 32, solid: true },
 
     { x: 0, y: 820, width: 440, height: 80, solid: true },
+    { x: 440, y: 860, width: 160, height: 40, solid: true },
     { x: 600, y: 820, width: 680, height: 80, solid: true },
 
     { x: 120, y: 640, width: 320, height: 24, solid: true },
     { x: 580, y: 640, width: 560, height: 24, solid: true },
-
     { x: 60, y: 460, width: 480, height: 24, solid: true },
     { x: 700, y: 460, width: 480, height: 24, solid: true },
-
     { x: 180, y: 280, width: 360, height: 24, solid: true },
     { x: 740, y: 280, width: 360, height: 24, solid: true },
-
     { x: 440, y: 140, width: 400, height: 24, solid: true }
   ],
 
