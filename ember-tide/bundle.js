@@ -16,8 +16,22 @@
   `;
   document.head.appendChild(style);
 
+  // app.js uses DOMContentLoaded, but it is loaded through dynamic import.
+  // The import can finish after DOMContentLoaded has already fired, which
+  // previously left window.app uninitialized and made ALL game controls dead.
+  let domContentLoadedFired = false;
+  document.addEventListener('DOMContentLoaded', () => {
+    domContentLoadedFired = true;
+  }, { once: true });
+
   import('./src/app.js')
     .then(() => {
+      // If app.js registered its DOMContentLoaded handler too late, replay
+      // the event once so the AppController is created exactly once.
+      if (domContentLoadedFired && !window.app) {
+        document.dispatchEvent(new Event('DOMContentLoaded'));
+      }
+
       const installMobileInput = () => {
         const app = window.app;
         if (!app || !app.engine || !app.engine.input) return false;
