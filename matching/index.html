@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    (function() {
+      var p = window.location.pathname;
+      if (p && !p.endsWith('/') && !p.endsWith('.html')) {
+        window.location.replace(p + '/' + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Matching Cards 🃏 لعبة الكوتشينة الحقيقية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- Firebase Scripts (Compat Version for 100% file:/// and browser support) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+  <style>
+    /* =========================================================
+       Matching Cards - كوتشينة واقعية ثلاثية الأبعاد بنظام الطبقات 2-Layer
+       ========================================================= */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Tajawal', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --table-felt: #0c2617;
+      --felt-radial: radial-gradient(ellipse at 50% 45%, #184c27 0%, #0d2b19 60%, #06170d 100%);
+      --gold-primary: #f59e0b;
+      --gold-light: #fbbf24;
+      --gold-dark: #b45309;
+      --card-red: #d32f2f;
+      --card-black: #111827;
+      --text-white: #f8fafc;
+      --text-muted: #86efac;
+    }
+
+    body {
+      background: var(--felt-radial);
+      min-height: 100vh;
+      color: var(--text-white);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 12px 10px 30px;
+      margin: 0;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .table-felt-bg {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        radial-gradient(rgba(245, 158, 11, 0.06) 1.5px, transparent 1.5px),
+        radial-gradient(rgba(0, 0, 0, 0.25) 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+      background-position: 0 0, 12px 12px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .main-wrap {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 620px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hidden { display: none !important; }
+
+    /* ── شريط التنقل العلوي ── */
+    .top-nav {
+      width: 100%;
+      display: flex;
+      justify-content: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .back-hub-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(6, 23, 13, 0.85);
+      border: 1.5px solid rgba(245, 158, 11, 0.45);
+      color: var(--gold-light);
+      text-decoration: none;
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(6px);
+    }
+    .back-hub-btn:hover {
+      background: #184c27;
+      border-color: var(--gold-primary);
+      transform: translateY(-1px);
+    }
+
+    /* ── كروت الشاشات ── */
+    .card-screen {
+      background: linear-gradient(165deg, #163d21 0%, #0d2817 100%);
+      border: 2px solid rgba(245, 158, 11, 0.35);
+      border-radius: 24px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65), 0 0 25px rgba(245, 158, 11, 0.12);
+      padding: 24px 20px 28px;
+      width: 100%;
+    }
+
+    .logo-area {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .logo-cards {
+      font-size: 2.6rem;
+      margin-bottom: 4px;
+      letter-spacing: 4px;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+    }
+    .logo-area h1 {
+      font-size: 2.1rem;
+      font-weight: 900;
+      color: var(--gold-light);
+      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+      letter-spacing: 1px;
+    }
+    .logo-sub {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    /* ── النماذج والأزرار ── */
+    .form-box {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .form-box label {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .form-box input, .join-row input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1.5px solid rgba(245, 158, 11, 0.35);
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-white);
+      outline: none;
+      transition: all 0.2s;
+    }
+    .form-box input:focus, .join-row input:focus {
+      border-color: var(--gold-primary);
+      background: rgba(0, 0, 0, 0.65);
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+    }
+    .form-box input::placeholder, .join-row input::placeholder {
+      color: #5d8a6b;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 14px;
+      padding: 13px 20px;
+      font-size: 1.05rem;
+      font-weight: 900;
+      cursor: pointer;
+      font-family: 'Tajawal', sans-serif;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+      color: #1a1000;
+      box-shadow: 0 4px 16px rgba(217, 119, 6, 0.4);
+    }
+    .btn-gold:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(217, 119, 6, 0.55);
+    }
+    .btn-green {
+      background: linear-gradient(135deg, #22c55e, #15803d);
+      color: #fff;
+      width: auto;
+      padding: 12px 20px;
+    }
+    .btn-gray {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      margin-top: 4px;
+    }
+    .btn-small {
+      background: transparent;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: var(--gold-light);
+      border-radius: 10px;
+      padding: 4px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #5d8a6b;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .or-divider::before, .or-divider::after {
+      content: '';
+      flex: 1;
+      border-top: 1px dashed rgba(245, 158, 11, 0.25);
+    }
+
+    .lobby-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .username-badge {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--gold-light);
+    }
+    .join-row {
+      display: flex;
+      gap: 8px;
+    }
+    .join-row input {
+      flex: 1;
+      text-align: center;
+      letter-spacing: 3px;
+      font-size: 1.05rem;
+    }
+
+    /* ── غرفة الانتظار ── */
+    .room-code-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1.5px solid rgba(245, 158, 11, 0.35);
+      border-radius: 14px;
+      padding: 10px 16px;
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .room-code-area strong {
+      font-size: 1.6rem;
+      color: var(--gold-light);
+      letter-spacing: 4px;
+    }
+
+    .players-vs-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 18px;
+      padding: 16px 12px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+    .pslot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 90px;
+    }
+    .pslot-avatar { font-size: 2rem; }
+    .pslot-name {
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: var(--text-white);
+    }
+    .pslot-badge {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+    .pslot-badge.ready {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+      border: 1px solid rgba(74, 222, 128, 0.4);
+    }
+    .pslot-badge.waiting {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--gold-light);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .vs-badge {
+      background: linear-gradient(135deg, #d97706, #fbbf24);
+      color: #1a1000;
+      font-weight: 900;
+      font-size: 0.95rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .hint {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+
+    /* =========================================================
+       شاشة اللعبة الحية
+       ========================================================= */
+    .gameplay-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .game-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(6, 23, 13, 0.9);
+      border: 1.5px solid rgba(245, 158, 11, 0.4);
+      border-radius: 16px;
+      padding: 10px 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .score-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 75px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+    .score-box.active {
+      background: rgba(245, 158, 11, 0.22);
+      border: 1.5px solid rgba(245, 158, 11, 0.65);
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.3);
+    }
+    .score-name { font-size: 0.78rem; color: var(--text-muted); font-weight: 700; }
+    .score-num { font-size: 1.8rem; font-weight: 900; color: var(--gold-light); line-height: 1.1; }
+    .score-label { font-size: 0.68rem; color: var(--text-muted); font-weight: 600; }
+
+    .turn-indicator {
+      flex: 1;
+      text-align: center;
+      padding: 0 6px;
+    }
+    .turn-text { font-size: 0.95rem; font-weight: 900; color: var(--gold-light); }
+    .turn-sub { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; }
+
+    .my-turn-banner {
+      background: linear-gradient(135deg, #d97706, #fbbf24);
+      color: #1a1000;
+      text-align: center;
+      font-size: 0.92rem;
+      font-weight: 900;
+      padding: 7px 12px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);
+      animation: pulseTurn 1.4s infinite;
+    }
+    @keyframes pulseTurn {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       رقعة البطاقات المكدسة الواقعية (2-Layer Realistic Stack)
+       ───────────────────────────────────────────────────────── */
+    .cards-board-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px 8px;
+      width: 100%;
+      padding: 6px 0 20px;
+      perspective: 1200px;
+    }
+
+    /* خانة الكروت المكدسة */
+    .card-slot {
+      position: relative;
+      aspect-ratio: 5/7;
+      cursor: pointer;
+      user-select: none;
+      perspective: 1000px;
+    }
+
+    /* تأثير الكرت السفلي الواقعي (Under Card 3D Physical Shadow & Offset) */
+    .under-card-layer {
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      background: #1e3a8a;
+      border: 2px solid #ffffff;
+      box-shadow: 3px 5px 12px rgba(0, 0, 0, 0.75);
+      transform: translate(4px, 5px) rotate(1.5deg);
+      z-index: 0;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .under-card-layer .pattern {
+      width: 100%;
+      height: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 4px;
+      background: repeating-linear-gradient(45deg, #172554, #172554 2px, #1e3a8a 2px, #1e3a8a 5px);
+    }
+
+    /* شارة توضيحية خفيفة لعدد الكروت بالخانة */
+    .stack-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #f59e0b;
+      color: #1a1000;
+      font-size: 0.62rem;
+      font-weight: 900;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    /* الخانة الفارغة بعد أخذ الكرتين */
+    .card-slot.slot-cleared {
+      cursor: default;
+      opacity: 0.2;
+      border: 1.5px dashed rgba(245, 158, 11, 0.3);
+      border-radius: 8px;
+    }
+    .card-slot.slot-cleared .under-card-layer,
+    .card-slot.slot-cleared .stack-badge,
+    .card-slot.slot-cleared .card-flipper {
+      display: none !important;
+    }
+
+    /* ── الفليبر الحقيقي (3D Flip Animation) ── */
+    .card-flipper {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
+      transition: transform 0.55s cubic-bezier(0.34, 1.4, 0.64, 1);
+      border-radius: 8px;
+      z-index: 2;
+    }
+
+    .card-slot.flipped .card-flipper {
+      transform: rotateY(180deg);
+    }
+
+    .c-face, .c-back {
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+    }
+
+    /* ظهر بطاقة الكوتشينة الحقيقية (Bicycle Royal Blue) */
+    .c-back {
+      background: #1e3a8a;
+      border: 2.5px solid #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+      transform: rotateY(0deg);
+    }
+
+    .c-back-pattern {
+      width: 100%;
+      height: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 4px;
+      background:
+        repeating-linear-gradient(
+          45deg,
+          #172554,
+          #172554 2px,
+          #1e3a8a 2px,
+          #1e3a8a 6px
+        );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .c-back-pattern::after {
+      content: '♠';
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    /* وجه بطاقة الكوتشينة الحقيقية الكاملة (Classic Crisp White) */
+    .c-face {
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      transform: rotateY(180deg);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 3px 5px;
+      user-select: none;
+    }
+
+    .c-corner-top, .c-corner-bot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1;
+    }
+    .c-corner-bot {
+      transform: rotate(180deg);
+    }
+
+    .c-val {
+      font-size: clamp(0.75rem, 2.2vw, 0.92rem);
+      font-weight: 900;
+      font-family: 'Arial', sans-serif;
+      line-height: 1;
+    }
+    .c-suit-sm {
+      font-size: clamp(0.65rem, 2vw, 0.8rem);
+      line-height: 1;
+    }
+
+    .c-center-suit {
+      font-size: clamp(1.4rem, 4.5vw, 1.8rem);
+      text-align: center;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    /* أيقونات الملوك والأمراء للشخصيات */
+    .face-royal-icon {
+      font-size: 0.9rem;
+      opacity: 0.85;
+    }
+
+    /* ألوان الكوتشينة الصريحة */
+    .c-face.red { color: var(--card-red); }
+    .c-face.black { color: var(--card-black); }
+
+    /* لمس / Hover على البطاقة */
+    .card-slot:not(.slot-cleared):not(.flipped):hover .card-flipper {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
+    }
+
+    /* ── شاشة النتائج ── */
+    .results-trophy {
+      font-size: 3.6rem;
+      text-align: center;
+      margin-bottom: 6px;
+      animation: popTrophy 0.6s ease;
+    }
+    @keyframes popTrophy {
+      0% { transform: scale(0.4); opacity: 0; }
+      60% { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .final-scores {
+      display: flex;
+      gap: 12px;
+      margin: 18px 0;
+    }
+    .final-score-card {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1.5px solid rgba(245, 158, 11, 0.3);
+      border-radius: 16px;
+      padding: 16px 8px;
+      text-align: center;
+    }
+    .final-score-card.winner-card {
+      background: rgba(245, 158, 11, 0.18);
+      border-color: var(--gold-light);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+    }
+    .final-name { font-size: 0.92rem; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; }
+    .final-num { font-size: 2.6rem; font-weight: 900; color: var(--gold-light); line-height: 1; }
+    .final-label { font-size: 0.78rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <!-- خلفية طاولة الجوخ -->
+  <div class="table-felt-bg"></div>
+
+  <div class="main-wrap">
+
+    <!-- زر الرجوع للـ Hub -->
+    <div class="top-nav">
+      <a href="../index.html" class="back-hub-btn">← الألعاب</a>
+    </div>
+
+    <!-- 1. شاشة تسجيل الدخول -->
+    <div id="auth-screen" class="card-screen">
+      <div class="logo-area">
+        <div class="logo-cards">🃏♠️♥️♦️♣️</div>
+        <h1>Matching Cards</h1>
+        <p class="logo-sub">لعبة الذاكرة بورق الكوتشينة الحقيقية (2-Layer)</p>
+      </div>
+      <div class="form-box">
+        <label for="login-username">👤 اكتب اسمك للدخول</label>
+        <input id="login-username" type="text" placeholder="مثال: أحمد، سارة..." maxlength="15" autofocus>
+        <button id="btn-login" class="btn btn-gold" onclick="handleLogin()">🎴 دخول اللعبة</button>
+      </div>
+    </div>
+
+    <!-- 2. اللوبي واختيار الغرفة -->
+    <div id="lobby-screen" class="card-screen hidden">
+      <div class="lobby-header">
+        <span id="display-user-name" class="username-badge">👤 ...</span>
+        <button id="btn-logout" class="btn-small" onclick="handleLogout()">تغيير الاسم</button>
+      </div>
+      <div class="logo-area small">
+        <div class="logo-cards">🃏</div>
+        <h2>Matching Cards</h2>
+        <p class="logo-sub">أنشئ غرفة جديدة أو انضم لصاحبك 1v1</p>
+      </div>
+      <div class="form-box">
+        <button id="btn-create-room" class="btn btn-gold" onclick="handleCreateRoom()">✨ إنشاء غرفة جديدة</button>
+        <div class="or-divider"><span>أو انضم لغرفة</span></div>
+        <div class="join-row">
+          <input id="room-code-input" type="text" placeholder="كود الغرفة" maxlength="6">
+          <button id="btn-join-room" class="btn btn-green" onclick="handleJoinRoom()">دخول</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. غرفة الانتظار -->
+    <div id="waiting-screen" class="card-screen hidden">
+      <div class="room-code-area">
+        <span>كود الغرفة:</span>
+        <strong id="display-room-code">----</strong>
+        <button id="btn-copy-code" class="btn-small" style="padding:4px 10px;" onclick="copyRoomCode()">📋 نسخ</button>
+      </div>
+      <div class="players-vs-box">
+        <div class="pslot">
+          <div class="pslot-avatar">♠️</div>
+          <div id="host-name" class="pslot-name">المضيف</div>
+          <div class="pslot-badge ready">جاهز</div>
+        </div>
+        <div class="vs-badge">VS</div>
+        <div class="pslot">
+          <div class="pslot-avatar" id="guest-avatar">⏳</div>
+          <div id="guest-name" class="pslot-name">في انتظار خصم...</div>
+          <div id="guest-status" class="pslot-badge waiting">ينتظر</div>
+        </div>
+      </div>
+      <p id="waiting-hint" class="hint">شارك كود الغرفة مع صاحبك! 🎴</p>
+      <button id="btn-start-game" class="btn btn-gold hidden" onclick="handleStartGameClick()">🚀 ابدأ اللعبة الآن 🎴</button>
+      <button id="btn-leave-room" class="btn btn-gray" onclick="handleLeaveRoom()">← الرئيسية</button>
+    </div>
+
+    <!-- 4. شاشة اللعبة الحية (رقعة الكوتشينة 2-Layer بالعرض) -->
+    <div id="game-screen" class="gameplay-wrap hidden">
+      <div class="game-topbar">
+        <div class="score-box" id="score-box-me">
+          <div class="score-name" id="score-name-me">أنت</div>
+          <div class="score-num" id="score-me">0</div>
+          <div class="score-label">أزواج مجمعة</div>
+        </div>
+        <div class="turn-indicator">
+          <div class="turn-text" id="turn-text">...</div>
+          <div class="turn-sub" id="turn-sub">اقلب بطاقتين</div>
+        </div>
+        <div class="score-box" id="score-box-opp">
+          <div class="score-name" id="score-name-opp">الخصم</div>
+          <div class="score-num" id="score-opp">0</div>
+          <div class="score-label">أزواج مجمعة</div>
+        </div>
+      </div>
+
+      <!-- بانر الدور -->
+      <div id="my-turn-banner" class="my-turn-banner hidden">🎴 دورك! اقلب بطاقتين للبحث عن المتطابق</div>
+
+      <!-- رقعة الـ 26 خانة المكدسة بطبقتين (2-Layer Grid) -->
+      <div id="cards-grid" class="cards-board-grid"></div>
+    </div>
+
+    <!-- 5. شاشة النتيجة النهائية -->
+    <div id="results-screen" class="card-screen hidden">
+      <div class="results-trophy" id="results-trophy">🏆</div>
+      <h2 id="results-title" style="text-align:center; font-size:1.7rem; font-weight:900; color:var(--gold-light);">الفائز!</h2>
+      <p id="results-sub" style="text-align:center; color:var(--text-muted); font-size:0.95rem; margin-bottom:18px;">أحسنت الذاكرة والتركيز!</p>
+      
+      <div class="final-scores">
+        <div class="final-score-card" id="final-card-me">
+          <div class="final-name" id="final-name-me">أنت</div>
+          <div class="final-num" id="final-num-me">0</div>
+          <div class="final-label">زوج مجمع</div>
+        </div>
+        <div class="final-score-card" id="final-card-opp">
+          <div class="final-name" id="final-name-opp">الخصم</div>
+          <div class="final-num" id="final-num-opp">0</div>
+          <div class="final-label">زوج مجمع</div>
+        </div>
+      </div>
+      <button id="btn-play-again" class="btn btn-gold" onclick="handlePlayAgain()">🔄 جولة جديدة</button>
+      <button id="btn-results-home" class="btn btn-gray" onclick="handleLeaveRoom()">← الرئيسية</button>
+    </div>
+
+  </div>
+
+  <!-- سكربت اللعبة المتكامل -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCDBUnS_KZ3qNiQw5HX0p-uKK9akPOnCI8",
+      authDomain: "tgame-6a455.firebaseapp.com",
+      databaseURL: "https://tgame-6a455-default-rtdb.firebaseio.com",
+      projectId: "tgame-6a455",
+      storageBucket: "tgame-6a455.firebasestorage.app",
+      messagingSenderId: "480514009504",
+      appId: "1:480514009504:web:af022d72d9705ee1725cc5",
+      measurementId: "G-S95DWXH5NE"
+    };
+
+    let db = null;
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+    } catch(e) {
+      console.warn("Firebase Init:", e);
+    }
+
+    // بناء 52 كرت كوتشينة حقيقية (4 أشكال × 13 قيمة = 26 زوج متطابق بالقيمة واللون)
+    const SUITS = [
+      { suit: '♠', color: 'black' },
+      { suit: '♣', color: 'black' },
+      { suit: '♥', color: 'red' },
+      { suit: '♦', color: 'red' }
+    ];
+    const VALUES = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+    function getRoyalBadge(val) {
+      if (val === 'K') return '👑';
+      if (val === 'Q') return '👸';
+      if (val === 'J') return '⚔️';
+      if (val === 'A') return '⭐';
+      return '';
+    }
+
+    function buildStackedSlots() {
+      const deck = [];
+      let id = 0;
+      for (const s of SUITS) {
+        for (const v of VALUES) {
+          deck.push({
+            id: id++,
+            value: v,
+            suit: s.suit,
+            color: s.color,
+            matchKey: `${v}_${s.color}`,
+            royalBadge: getRoyalBadge(v)
+          });
+        }
+      }
+
+      // خلط عشوائي حقيقي
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+
+      // توزيع 52 كرت على 26 خانة (كل خانة فيها كرت تحت [0] وكرت فوق [1])
+      const slots = [];
+      for (let i = 0; i < 26; i++) {
+        slots.push({
+          slotId: i,
+          stack: [deck[i], deck[i + 26]]
+        });
+      }
+      return slots;
+    }
+
+    // التخزين الآمن
+    function safeSet(k, v) { try { localStorage.setItem(k, v); } catch(e){} }
+    function safeGet(k) { try { return localStorage.getItem(k); } catch(e){ return null; } }
+    function safeRemove(k) { try { localStorage.removeItem(k); } catch(e){} }
+    function sanitize(s) { return (s || 'user').replace(/[.#$\[\]\/]/g, '_').trim(); }
+
+    let currentUsername = safeGet('agy_user_name') || '';
+    let currentRoomId = null;
+    let myRole = null;
+    let isMyTurn = false;
+    let isProcessing = false;
+    let currentRoomData = null;
+
+    function $(id) { return document.getElementById(id); }
+
+    function showScreen(screenId) {
+      ['auth-screen', 'lobby-screen', 'waiting-screen', 'game-screen', 'results-screen'].forEach(id => {
+        const el = $(id);
+        if (el) el.classList.add('hidden');
+      });
+      const target = $(screenId);
+      if (target) target.classList.remove('hidden');
+    }
+
+    function generateRoomCode() {
+      return Math.floor(1000 + Math.random() * 9000).toString();
+    }
+
+    // 1. تسجيل الدخول
+    function handleLogin() {
+      const input = $('login-username');
+      const name = input ? input.value.trim() : '';
+      if (!name) {
+        alert("يرجى كتابة اسمك أولاً!");
+        if (input) input.focus();
+        return;
+      }
+      currentUsername = name;
+      safeSet('agy_user_name', name);
+
+      if (db) {
+        db.ref('users/' + sanitize(name)).set({
+          username: name,
+          lastLogin: Date.now()
+        }).catch(()=>{});
+      }
+
+      goToLobby();
+    }
+
+    function goToLobby() {
+      const displayEl = $('display-user-name');
+      if (displayEl) displayEl.innerText = `👤 ${currentUsername}`;
+      showScreen('lobby-screen');
+    }
+
+    function handleLogout() {
+      safeRemove('agy_user_name');
+      currentUsername = '';
+      const input = $('login-username');
+      if (input) input.value = '';
+      showScreen('auth-screen');
+    }
+
+    // 2. إنشاء غرفة جديدة
+    function handleCreateRoom() {
+      if (!currentUsername) { showScreen('auth-screen'); return; }
+      currentRoomId = generateRoomCode();
+      myRole = 'player1';
+      const slots = buildStackedSlots();
+
+      const initialRoomData = {
+        roomId: currentRoomId,
+        status: 'waiting',
+        hostName: currentUsername,
+        guestName: null,
+        currentTurn: 'player1',
+        firstFlippedSlot: null,
+        secondFlippedSlot: null,
+        player1: { name: currentUsername, score: 0 },
+        player2: null,
+        slots: slots,
+        lastAction: Date.now()
+      };
+
+      const btn = $('btn-create-room');
+      if (btn) { btn.disabled = true; btn.innerText = '⏳ جاري الإنشاء...'; }
+
+      if (db) {
+        db.ref('mc_rooms/' + currentRoomId).set(initialRoomData)
+          .then(() => {
+            listenToRoom(currentRoomId);
+          })
+          .catch((err) => {
+            console.error(err);
+            alert("حدث خطأ أثناء الاتصال بقاعدة البيانات!");
+          })
+          .finally(() => {
+            if (btn) { btn.disabled = false; btn.innerText = '✨ إنشاء غرفة جديدة'; }
+          });
+      }
+    }
+
+    // 3. الانضمام لغرفة
+    function handleJoinRoom() {
+      if (!currentUsername) { showScreen('auth-screen'); return; }
+      const input = $('room-code-input');
+      const code = input ? input.value.trim() : '';
+      if (!code) {
+        alert("يرجى كتابة كود الغرفة!");
+        if (input) input.focus();
+        return;
+      }
+
+      currentRoomId = code;
+      myRole = 'player2';
+
+      const btn = $('btn-join-room');
+      if (btn) { btn.disabled = true; btn.innerText = '⏳...'; }
+
+      if (db) {
+        db.ref('mc_rooms/' + code).once('value')
+          .then((snap) => {
+            if (!snap.exists()) {
+              alert("الغرفة غير موجودة! تأكد من صحة الكود.");
+              return;
+            }
+            const roomData = snap.val();
+            if (roomData.player2 && roomData.player2.name && roomData.player2.name !== currentUsername && roomData.status !== 'waiting') {
+              alert("الغرفة مكتملة أو بدأت بالفعل!");
+              return;
+            }
+            return db.ref('mc_rooms/' + code).update({
+              guestName: currentUsername,
+              player2: { name: currentUsername, score: 0 }
+            }).then(() => {
+              listenToRoom(code);
+            });
+          })
+          .catch((err) => {
+            console.error(err);
+            alert("حدث خطأ أثناء الانضمام للغرفة!");
+          })
+          .finally(() => {
+            if (btn) { btn.disabled = false; btn.innerText = 'دخول'; }
+          });
+      }
+    }
+
+    // 4. بدء اللعبة
+    function handleStartGameClick() {
+      if (!currentRoomId || !db) return;
+      const btn = $('btn-start-game');
+      if (btn) { btn.disabled = true; btn.innerText = '🚀 جاري بدء اللعبة...'; }
+
+      const p1Name = currentRoomData?.hostName || currentUsername;
+      const p2Name = currentRoomData?.guestName || currentRoomData?.player2?.name || 'الخصم';
+      const slots = buildStackedSlots();
+
+      db.ref('mc_rooms/' + currentRoomId).update({
+        status: 'playing',
+        currentTurn: 'player1',
+        firstFlippedSlot: null,
+        secondFlippedSlot: null,
+        slots: slots,
+        lastAction: Date.now(),
+        player1: { name: p1Name, score: 0 },
+        player2: { name: p2Name, score: 0 }
+      }).catch((e) => {
+        console.error(e);
+        alert("حدث خطأ أثناء بدء اللعبة!");
+        if (btn) { btn.disabled = false; btn.innerText = '🚀 ابدأ اللعبة الآن 🎴'; }
+      });
+    }
+
+    // 5. الاستماع المركزي للغرفة
+    function listenToRoom(roomId) {
+      if (!db) return;
+      db.ref('mc_rooms/' + roomId).on('value', (snapshot) => {
+        if (!snapshot.exists()) return;
+        const room = snapshot.val();
+        currentRoomData = room;
+        handleRoomUpdate(room);
+      });
+    }
+
+    function handleRoomUpdate(room) {
+      if (!room) return;
+
+      const isPlayer1 = (currentUsername === room.hostName);
+      myRole = isPlayer1 ? 'player1' : 'player2';
+      const oppRole = isPlayer1 ? 'player2' : 'player1';
+
+      const myData = room[myRole] || { name: currentUsername, score: 0 };
+      const oppData = room[oppRole] || { name: 'الخصم', score: 0 };
+
+      const codeDisplay = $('display-room-code');
+      if (codeDisplay) codeDisplay.innerText = currentRoomId;
+
+      // ── A. غرفة الانتظار ──
+      if (room.status === 'waiting') {
+        showScreen('waiting-screen');
+
+        const hostNameEl = $('host-name');
+        if (hostNameEl) hostNameEl.innerText = room.hostName || 'المضيف';
+
+        const guestNameEl = $('guest-name');
+        const guestAvatarEl = $('guest-avatar');
+        const guestStatusEl = $('guest-status');
+        const startBtn = $('btn-start-game');
+        const hintEl = $('waiting-hint');
+
+        const hasGuest = Boolean(room.player2 && room.player2.name);
+
+        if (hasGuest) {
+          if (guestNameEl) guestNameEl.innerText = room.player2.name;
+          if (guestAvatarEl) guestAvatarEl.innerText = '♥️';
+          if (guestStatusEl) {
+            guestStatusEl.innerText = 'جاهز';
+            guestStatusEl.className = 'pslot-badge ready';
+          }
+
+          if (isPlayer1) {
+            if (startBtn) {
+              startBtn.classList.remove('hidden');
+              startBtn.disabled = false;
+              startBtn.innerText = '🚀 ابدأ اللعبة الآن 🎴';
+            }
+            if (hintEl) hintEl.innerText = `${room.player2.name} جاهز! اضغط ابدأ للعب 🃏`;
+          } else {
+            if (startBtn) startBtn.classList.add('hidden');
+            if (hintEl) hintEl.innerText = 'في انتظار المضيف لبدء اللعبة... 🎴';
+          }
+        } else {
+          if (guestNameEl) guestNameEl.innerText = 'في انتظار خصم...';
+          if (guestAvatarEl) guestAvatarEl.innerText = '⏳';
+          if (guestStatusEl) {
+            guestStatusEl.innerText = 'ينتظر';
+            guestStatusEl.className = 'pslot-badge waiting';
+          }
+          if (isPlayer1 && startBtn) {
+            startBtn.classList.remove('hidden');
+            startBtn.disabled = false;
+            startBtn.innerText = '🚀 ابدأ اللعبة الآن 🎴';
+          }
+          if (hintEl) hintEl.innerText = 'شارك كود الغرفة مع صاحبك! 🎴';
+        }
+      }
+
+      // ── B. شاشة اللعب الحية ──
+      else if (room.status === 'playing') {
+        showScreen('game-screen');
+
+        const scoreNameMe = $('score-name-me');
+        const scoreNameOpp = $('score-name-opp');
+        const scoreMe = $('score-me');
+        const scoreOpp = $('score-opp');
+
+        if (scoreNameMe) scoreNameMe.innerText = myData.name || currentUsername;
+        if (scoreNameOpp) scoreNameOpp.innerText = oppData.name || 'الخصم';
+        if (scoreMe) scoreMe.innerText = myData.score || 0;
+        if (scoreOpp) scoreOpp.innerText = oppData.score || 0;
+
+        isMyTurn = (room.currentTurn === myRole);
+        updateTurnUI(room, myData, oppData);
+
+        if (room.slots) {
+          updateBoardSlots(room.slots, room.firstFlippedSlot, room.secondFlippedSlot);
+        }
+
+        const allSlotsCleared = room.slots && room.slots.every(s => !s.stack || s.stack.length === 0);
+        if (allSlotsCleared) {
+          setTimeout(() => showResults(room, isPlayer1, myData, oppData), 800);
+        }
+      }
+
+      // ── C. شاشة النتائج ──
+      else if (room.status === 'ended') {
+        const isPlayer1Final = (currentUsername === room.hostName);
+        const myDataF = room[isPlayer1Final ? 'player1' : 'player2'] || { name: currentUsername, score: 0 };
+        const oppDataF = room[isPlayer1Final ? 'player2' : 'player1'] || { name: 'الخصم', score: 0 };
+        showResults(room, isPlayer1Final, myDataF, oppDataF);
+      }
+    }
+
+    // =========================================================
+    // رسم وتحديث رقعة الكروت بنظام القلب ثلاثي الأبعاد الحقيقي
+    // =========================================================
+    function updateBoardSlots(slots, firstSlotIdx, secondSlotIdx) {
+      const grid = $('cards-grid');
+      if (!grid) return;
+
+      const existingSlotElements = grid.querySelectorAll('.card-slot');
+
+      // 1. إذا كانت الشبكة مبنية مسبقاً، نحدث الحالة فقط بدون إعادة بناء الـ DOM حتى لا تنقطع حركة الـ 3D Flip!
+      if (existingSlotElements.length === slots.length) {
+        slots.forEach((slot, idx) => {
+          const slotEl = existingSlotElements[idx];
+          if (!slotEl) return;
+
+          const stack = slot.stack || [];
+          const count = stack.length;
+
+          // تحديث الكرت السفلي والشارة
+          const underLayer = slotEl.querySelector('.under-card-layer');
+          const stackBadge = slotEl.querySelector('.stack-badge');
+
+          if (count === 0) {
+            slotEl.classList.add('slot-cleared');
+            slotEl.classList.remove('flipped');
+            if (underLayer) underLayer.style.display = 'none';
+            if (stackBadge) stackBadge.style.display = 'none';
+            return;
+          } else {
+            slotEl.classList.remove('slot-cleared');
+            if (count > 1) {
+              if (underLayer) underLayer.style.display = 'flex';
+              if (stackBadge) stackBadge.style.display = 'flex';
+            } else {
+              if (underLayer) underLayer.style.display = 'none';
+              if (stackBadge) stackBadge.style.display = 'none';
+            }
+          }
+
+          // الكرت العلوي
+          const topCard = stack[count - 1];
+          const shouldBeFlipped = (idx === firstSlotIdx || idx === secondSlotIdx);
+
+          // تحديث وجه الكرت إن تغير
+          const faceEl = slotEl.querySelector('.c-face');
+          if (faceEl && topCard) {
+            faceEl.className = `c-face ${topCard.color}`;
+            const royalBadge = topCard.royalBadge || '';
+            faceEl.innerHTML = `
+              <div class="c-corner-top">
+                <span class="c-val">${topCard.value}</span>
+                <span class="c-suit-sm">${topCard.suit}</span>
+              </div>
+              <div class="c-center-suit">
+                ${topCard.suit}
+                ${royalBadge ? `<span class="face-royal-icon">${royalBadge}</span>` : ''}
+              </div>
+              <div class="c-corner-bot">
+                <span class="c-val">${topCard.value}</span>
+                <span class="c-suit-sm">${topCard.suit}</span>
+              </div>
+            `;
+          }
+
+          // تطبيق تأثير القلب ثلاثي الأبعاد بسلاسة
+          if (shouldBeFlipped) {
+            slotEl.classList.add('flipped');
+          } else {
+            slotEl.classList.remove('flipped');
+          }
+        });
+        return;
+      }
+
+      // 2. البناء الأولي للـ 26 خانة
+      grid.innerHTML = '';
+      slots.forEach((slot, slotIdx) => {
+        const slotEl = document.createElement('div');
+        slotEl.className = 'card-slot';
+        slotEl.dataset.slotId = slotIdx;
+
+        const stack = slot.stack || [];
+        const count = stack.length;
+        const topCard = count > 0 ? stack[count - 1] : { value: 'A', suit: '♠', color: 'black' };
+        const isFlipped = (slotIdx === firstSlotIdx || slotIdx === secondSlotIdx);
+        const royalBadge = topCard.royalBadge || '';
+
+        if (count === 0) slotEl.classList.add('slot-cleared');
+        if (isFlipped) slotEl.classList.add('flipped');
+
+        slotEl.innerHTML = `
+          <!-- الكرت السفلي مع ظل وإزاحة ثلاثية الأبعاد واضحة -->
+          <div class="under-card-layer" style="${count > 1 ? 'display:flex;' : 'display:none;'}">
+            <div class="pattern"></div>
+          </div>
+
+          <!-- شارة عدد الكروت بالخانة (2x) -->
+          <div class="stack-badge" style="${count > 1 ? 'display:flex;' : 'display:none;'}">2</div>
+
+          <!-- الكرت العلوي القابل للقلب 3D -->
+          <div class="card-flipper">
+            <!-- ظهر الكوتشينة الحقيقية -->
+            <div class="c-back">
+              <div class="c-back-pattern"></div>
+            </div>
+            <!-- وجه الكوتشينة الحقيقية الكامل مع الرموز الصريحة -->
+            <div class="c-face ${topCard.color}">
+              <div class="c-corner-top">
+                <span class="c-val">${topCard.value}</span>
+                <span class="c-suit-sm">${topCard.suit}</span>
+              </div>
+              <div class="c-center-suit">
+                ${topCard.suit}
+                ${royalBadge ? `<span class="face-royal-icon">${royalBadge}</span>` : ''}
+              </div>
+              <div class="c-corner-bot">
+                <span class="c-val">${topCard.value}</span>
+                <span class="c-suit-sm">${topCard.suit}</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        slotEl.onclick = function() { handleSlotClick(slotIdx); };
+        grid.appendChild(slotEl);
+      });
+    }
+
+    // =========================================================
+    // منطق النقر وقلب الكروت والمطابقة
+    // =========================================================
+    function handleSlotClick(slotIdx) {
+      if (!isMyTurn || isProcessing || !currentRoomId || !db) return;
+
+      db.ref('mc_rooms/' + currentRoomId).once('value').then((snap) => {
+        const room = snap.val();
+        if (!room || room.status !== 'playing') return;
+
+        const slots = room.slots || [];
+        const slot = slots[slotIdx];
+        if (!slot || !slot.stack || slot.stack.length === 0) return;
+
+        if (slotIdx === room.firstFlippedSlot) return;
+
+        // 1. قلب الكرت الأول
+        if (room.firstFlippedSlot === null || room.firstFlippedSlot === undefined) {
+          db.ref('mc_rooms/' + currentRoomId).update({
+            firstFlippedSlot: slotIdx,
+            lastAction: Date.now()
+          });
+          return;
+        }
+
+        // 2. قلب الكرت الثاني
+        const firstSlot = slots[room.firstFlippedSlot];
+        const card1 = firstSlot.stack[firstSlot.stack.length - 1];
+        const card2 = slot.stack[slot.stack.length - 1];
+
+        isProcessing = true;
+
+        db.ref('mc_rooms/' + currentRoomId).update({
+          secondFlippedSlot: slotIdx,
+          lastAction: Date.now()
+        }).then(() => {
+          setTimeout(() => {
+            const matched = (card1.matchKey === card2.matchKey);
+
+            const updatedSlots = slots.map((s, idx) => {
+              if (matched && (idx === room.firstFlippedSlot || idx === slotIdx)) {
+                // إزالة الكرت العلوي ليظهر الكرت السفلي فوراً!
+                const newStack = [...(s.stack || [])];
+                newStack.pop();
+                return { ...s, stack: newStack };
+              }
+              return s;
+            });
+
+            const currentScore = room[myRole]?.score || 0;
+            // إذا تطابقا: يستمر نفس اللاعب في دوره!
+            const nextTurn = matched ? myRole : (myRole === 'player1' ? 'player2' : 'player1');
+
+            const roomUpdates = {
+              slots: updatedSlots,
+              firstFlippedSlot: null,
+              secondFlippedSlot: null,
+              currentTurn: nextTurn,
+              lastAction: Date.now()
+            };
+
+            if (matched) {
+              roomUpdates[myRole + '/score'] = currentScore + 1;
+            }
+
+            const allCleared = updatedSlots.every(s => !s.stack || s.stack.length === 0);
+            if (allCleared) roomUpdates.status = 'ended';
+
+            db.ref('mc_rooms/' + currentRoomId).update(roomUpdates).finally(() => {
+              isProcessing = false;
+            });
+          }, 900);
+        });
+      });
+    }
+
+    function updateTurnUI(room, myData, oppData) {
+      const isMyTurnNow = (room.currentTurn === myRole);
+      const activePlayerName = isMyTurnNow ? (myData.name || currentUsername) : (oppData.name || 'الخصم');
+
+      const turnText = $('turn-text');
+      const turnSub = $('turn-sub');
+      const myTurnBanner = $('my-turn-banner');
+      const scoreBoxMe = $('score-box-me');
+      const scoreBoxOpp = $('score-box-opp');
+
+      if (turnText) turnText.innerText = `🎴 دور ${activePlayerName}`;
+      if (turnSub) turnSub.innerText = isMyTurnNow ? 'دورك الآن! اقلب بطاقتين...' : 'ينتظر دوره...';
+
+      if (isMyTurnNow) {
+        if (myTurnBanner) myTurnBanner.classList.remove('hidden');
+        if (scoreBoxMe) scoreBoxMe.classList.add('active');
+        if (scoreBoxOpp) scoreBoxOpp.classList.remove('active');
+      } else {
+        if (myTurnBanner) myTurnBanner.classList.add('hidden');
+        if (scoreBoxMe) scoreBoxMe.classList.remove('active');
+        if (scoreBoxOpp) scoreBoxOpp.classList.add('active');
+      }
+    }
+
+    // 8. شاشة النتائج
+    function showResults(room, isPlayer1, myData, oppData) {
+      const myScore = myData.score || 0;
+      const oppScore = oppData.score || 0;
+      const iWon = myScore > oppScore;
+      const isDraw = myScore === oppScore;
+
+      const finalNameMe = $('final-name-me');
+      const finalNameOpp = $('final-name-opp');
+      const finalNumMe = $('final-num-me');
+      const finalNumOpp = $('final-num-opp');
+      const resultsTrophy = $('results-trophy');
+      const resultsTitle = $('results-title');
+      const resultsSub = $('results-sub');
+
+      if (finalNameMe) finalNameMe.innerText = myData.name || currentUsername;
+      if (finalNameOpp) finalNameOpp.innerText = oppData.name || 'الخصم';
+      if (finalNumMe) finalNumMe.innerText = myScore;
+      if (finalNumOpp) finalNumOpp.innerText = oppScore;
+
+      if (isDraw) {
+        if (resultsTrophy) resultsTrophy.innerText = '🤝';
+        if (resultsTitle) resultsTitle.innerText = 'تعادل رائع!';
+        if (resultsSub) resultsSub.innerText = 'أداء وتركيز متكافئ وقوي! 💪';
+      } else if (iWon) {
+        if (resultsTrophy) resultsTrophy.innerText = '👑🏆';
+        if (resultsTitle) resultsTitle.innerText = `مبروك يا ${currentUsername}! 🎉`;
+        if (resultsSub) resultsSub.innerText = 'فوز مستحق بفضل الذاكرة القوية! 🃏';
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 130, spread: 85, origin: { y: 0.6 } });
+        }
+      } else {
+        if (resultsTrophy) resultsTrophy.innerText = '🥈';
+        if (resultsTitle) resultsTitle.innerText = `فاز ${oppData.name || 'الخصم'}!`;
+        if (resultsSub) resultsSub.innerText = 'حظ أوفر في الجولة القادمة! 💪';
+      }
+
+      showScreen('results-screen');
+    }
+
+    // 9. جولة جديدة ومغادرة
+    function handlePlayAgain() {
+      if (!currentRoomId || !db) { goToLobby(); return; }
+      const btn = $('btn-play-again');
+      if (btn) { btn.disabled = true; btn.innerText = '⏳ جاري التجهيز...'; }
+
+      const slots = buildStackedSlots();
+      db.ref('mc_rooms/' + currentRoomId).update({
+        status: 'playing',
+        currentTurn: 'player1',
+        firstFlippedSlot: null,
+        secondFlippedSlot: null,
+        slots: slots,
+        lastAction: Date.now(),
+        'player1/score': 0,
+        'player2/score': 0
+      }).finally(() => {
+        if (btn) { btn.disabled = false; btn.innerText = '🔄 جولة جديدة'; }
+      });
+    }
+
+    function handleLeaveRoom() {
+      if (db && currentRoomId) {
+        db.ref('mc_rooms/' + currentRoomId).off();
+      }
+      currentRoomId = null;
+      const input = $('room-code-input');
+      if (input) input.value = '';
+      goToLobby();
+    }
+
+    function copyRoomCode() {
+      const txt = currentRoomId || '';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(() => {
+          const btn = $('btn-copy-code');
+          if (btn) {
+            btn.innerText = '✅ تم النسخ';
+            setTimeout(() => { btn.innerText = '📋 نسخ'; }, 2000);
+          }
+        });
+      } else {
+        prompt("انسخ كود الغرفة:", txt);
+      }
+    }
+
+    // تهيئة الدخول عند فتح الصفحة
+    window.addEventListener('DOMContentLoaded', () => {
+      const loginInput = $('login-username');
+      if (loginInput) {
+        loginInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') handleLogin();
+        });
+      }
+      const roomInput = $('room-code-input');
+      if (roomInput) {
+        roomInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') handleJoinRoom();
+        });
+      }
+
+      if (currentUsername) {
+        goToLobby();
+      } else {
+        showScreen('auth-screen');
+      }
+    });
+  </script>
+</body>
+</html>

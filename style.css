@@ -1,0 +1,735 @@
+/* =========================================================
+   أتوبيس كومبليت - ستايل بينك كيووووت مع شاشات التسجيل واللوبي 🎀🌸✨
+   ========================================================= */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Tajawal', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --pink-primary: #ff5483;
+  --pink-gradient-start: #ff7597;
+  --pink-gradient-end: #ff4071;
+  --pink-dark: #4c0519;
+  --pink-soft: #fff0f5;
+  --pink-bubble: #fce7f3;
+  --pink-border: #fbcfe8;
+  --pink-border-active: #f472b6;
+  --pink-accent: #ff2a70;
+  --pink-shadow: rgba(255, 64, 113, 0.28);
+  --text-dark: #4c0519;
+  --text-muted: #9d4c6c;
+  --card-bg: #ffffff;
+  --app-bg: #fff5f8;
+}
+
+body {
+  background-color: var(--app-bg);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.bg-pattern {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(#fbcfe8 1.5px, transparent 1.5px),
+    radial-gradient(#fce7f3 1.5px, #fff5f8 1.5px);
+  background-size: 32px 32px;
+  background-position: 0 0, 16px 16px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.main-container {
+  width: 100%;
+  max-width: 450px;
+  position: relative;
+  z-index: 1;
+}
+
+.game-card {
+  background: var(--card-bg);
+  border-radius: 32px;
+  box-shadow: 0 16px 45px var(--pink-shadow), 0 4px 15px rgba(255, 182, 193, 0.2);
+  overflow: hidden;
+  border: 2px solid #fce7f3;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* بادج ترحيب المستخدم في اللوبي */
+.user-greeting-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+}
+
+.user-greeting-badge strong {
+  color: #ffffff;
+  font-size: 1.15rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.btn-logout {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+/* =========================================================
+   1. الهيدر في شاشة اللعب الحية
+   ========================================================= */
+.gameplay-header {
+  background: linear-gradient(135deg, var(--pink-gradient-start) 0%, var(--pink-gradient-end) 100%);
+  padding: 24px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  color: #ffffff;
+}
+
+.timer-badge {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+
+.timer-badge.urgent {
+  background: #ff1744;
+  animation: cutePulse 0.8s infinite;
+}
+
+@keyframes cutePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+.timer-icon {
+  font-size: 1rem;
+}
+
+.header-titles {
+  text-align: center;
+  flex: 1;
+  padding: 0 10px;
+}
+
+.header-titles h2 {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.header-titles p {
+  font-size: 0.85rem;
+  color: #ffe4e6;
+  font-weight: 600;
+}
+
+.letter-badge {
+  background: linear-gradient(135deg, #ffffff 0%, #fff0f5 100%);
+  width: 58px;
+  height: 58px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 6px 16px rgba(131, 24, 67, 0.15), 0 0 0 3px rgba(255, 255, 255, 0.6);
+}
+
+.letter-text {
+  color: var(--pink-primary);
+  font-size: 2.1rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.sparkle-icon {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  background: #ff4071;
+  color: #fff;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border: 2px solid #ffffff;
+}
+
+/* =========================================================
+   2. شريط تقدم الخصم المباشر (Single Opponent Live Bar)
+   ========================================================= */
+.opponent-live-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 18px;
+  background: #fff5f8;
+  border-bottom: 1.5px solid #fce7f3;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.opp-label {
+  white-space: nowrap;
+  color: #be185d;
+  font-weight: 900;
+}
+
+.opp-progress-track {
+  flex: 1;
+  height: 10px;
+  background: #fce7f3;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #fbcfe8;
+}
+
+.opp-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f472b6, #ff4071);
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.opp-count {
+  font-size: 0.9rem;
+  color: var(--pink-primary);
+  min-width: 32px;
+  font-weight: 900;
+  text-align: left;
+}
+
+/* =========================================================
+   3. الخانات الخمسة الأساسية
+   ========================================================= */
+.categories-list {
+  padding: 18px 16px 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.category-row {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 2px solid #fce7f3;
+  border-radius: 18px;
+  padding: 6px 14px;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.category-row.active-filled {
+  background: var(--pink-soft);
+  border-color: var(--pink-border);
+}
+
+.category-row:focus-within {
+  border-color: var(--pink-primary);
+  background: #fff0f5;
+  box-shadow: 0 0 0 4px rgba(255, 84, 131, 0.18);
+  transform: translateY(-1px);
+}
+
+.check-icon {
+  color: #ff2a70;
+  font-size: 1.25rem;
+  font-weight: 900;
+  width: 26px;
+  text-align: center;
+  opacity: 0.2;
+  transition: all 0.25s ease;
+}
+
+.category-row.valid-input .check-icon {
+  opacity: 1;
+  transform: scale(1.25) rotate(-5deg);
+}
+
+.game-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: var(--pink-dark);
+  padding: 8px 10px;
+  text-align: right;
+}
+
+.game-input::placeholder {
+  color: #f472b6;
+  opacity: 0.6;
+}
+
+.category-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #9d4c6c;
+  padding-right: 6px;
+  min-width: 88px;
+  justify-content: flex-end;
+}
+
+.cat-icon {
+  font-size: 1.3rem;
+}
+
+/* الفوتر والزر */
+.gameplay-footer {
+  padding: 16px 20px 24px 20px;
+  text-align: center;
+}
+
+.footer-prompt {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--pink-dark);
+  margin-bottom: 14px;
+}
+
+.btn-submit {
+  width: 100%;
+  background: linear-gradient(135deg, #ff4071 0%, #ff6b9d 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 18px;
+  padding: 16px 24px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 10px 24px var(--pink-shadow);
+  transition: all 0.25s ease;
+}
+
+.btn-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(255, 64, 113, 0.4);
+}
+
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   4. شاشات اللوبي والانتظار
+   ========================================================= */
+.card-header {
+  background: linear-gradient(135deg, var(--pink-gradient-start) 0%, var(--pink-gradient-end) 100%);
+  color: #ffffff;
+  padding: 26px 20px;
+  text-align: center;
+}
+
+.lobby-header .logo-badge {
+  font-size: 2.8rem;
+  margin-bottom: 6px;
+}
+
+.lobby-header h1 {
+  font-size: 1.75rem;
+  font-weight: 900;
+}
+
+.lobby-header .subtitle {
+  color: #ffe4e6;
+  font-size: 0.95rem;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.card-body {
+  padding: 24px 20px;
+  background: #ffffff;
+}
+
+.input-group {
+  margin-bottom: 20px;
+  text-align: right;
+}
+
+.input-group label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--pink-dark);
+  margin-bottom: 8px;
+}
+
+.input-group input,
+.join-box input {
+  width: 100%;
+  border: 2px solid #fbcfe8;
+  border-radius: 16px;
+  padding: 13px 16px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--pink-dark);
+  outline: none;
+  background: #fffbfa;
+}
+
+.input-group input:focus,
+.join-box input:focus {
+  border-color: var(--pink-primary);
+  background: #fff0f5;
+  box-shadow: 0 0 0 4px rgba(255, 84, 131, 0.15);
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.btn {
+  border: none;
+  border-radius: 16px;
+  padding: 14px 20px;
+  font-size: 1.1rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #ff4071 0%, #ff6b9d 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 18px var(--pink-shadow);
+}
+
+.btn-secondary {
+  background: #831843;
+  color: #ffffff;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #f472b6;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 2px dashed #fbcfe8;
+}
+
+.divider span {
+  padding: 0 12px;
+}
+
+.join-box {
+  display: flex;
+  gap: 10px;
+}
+
+.join-box input {
+  flex: 1;
+  text-align: center;
+  letter-spacing: 3px;
+}
+
+.room-code-badge {
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 1rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+}
+
+.room-code-badge strong {
+  color: #ffffff;
+  letter-spacing: 2px;
+  font-size: 1.25rem;
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.players-vs {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  margin-bottom: 24px;
+  padding: 18px 0;
+  background: #fff5f8;
+  border: 1.5px solid #fce7f3;
+  border-radius: 20px;
+}
+
+.player-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 95px;
+}
+
+.player-slot .avatar {
+  font-size: 2.4rem;
+}
+
+.player-slot .name {
+  font-weight: 900;
+  font-size: 1rem;
+  color: var(--pink-dark);
+}
+
+.player-slot .status {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.status.ready {
+  background: #fdf2f8;
+  color: #db2777;
+  border: 1px solid #fbcfe8;
+}
+
+.status.waiting {
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+.vs-circle {
+  background: linear-gradient(135deg, #ff4071, #ff7597);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 0.95rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hint-text {
+  color: #9d4c6c;
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+/* =========================================================
+   5. شاشة النتائج النظيفة والمرتبة
+   ========================================================= */
+.results-header {
+  background: linear-gradient(135deg, #ff4071 0%, #ff7597 100%);
+}
+
+.winner-crown {
+  font-size: 3.2rem;
+  margin-bottom: 6px;
+  animation: cuteBounce 1.4s infinite cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes cuteBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-10px) scale(1.1); }
+}
+
+.results-body {
+  padding: 20px 16px;
+}
+
+.players-result-summary {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  background: #fff5f8;
+  padding: 12px;
+  border-radius: 20px;
+  border: 1.5px solid #fce7f3;
+}
+
+.res-player-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.res-player-card .player-icon {
+  font-size: 1.6rem;
+}
+
+.res-player-card .p-name {
+  font-weight: 900;
+  font-size: 0.95rem;
+  color: var(--pink-dark);
+}
+
+.p-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.winner-badge {
+  background: #fdf2f8;
+  color: #be185d;
+  border: 1px solid #fbcfe8;
+}
+
+.second-badge {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.vs-res-text {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #f472b6;
+  background: #ffffff;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid #fce7f3;
+}
+
+.clean-table-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.clean-row-header {
+  display: grid;
+  grid-template-columns: 85px 1fr 1fr;
+  gap: 8px;
+  padding: 0 6px 4px 6px;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #9d4c6c;
+  text-align: center;
+}
+
+.clean-data-row {
+  display: grid;
+  grid-template-columns: 85px 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.cat-pill {
+  background: #fff5f8;
+  border: 1.5px solid #fce7f3;
+  color: var(--pink-dark);
+  padding: 10px 6px;
+  border-radius: 14px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ans-box {
+  padding: 10px 10px;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: center;
+  word-break: break-word;
+  transition: all 0.2s ease;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ans-box.ans-p1 {
+  background: #fdf2f8;
+  color: #be185d;
+  border: 1.5px solid #fbcfe8;
+}
+
+.ans-box.ans-p2 {
+  background: #f8fafc;
+  color: #334155;
+  border: 1.5px solid #e2e8f0;
+}
+
+.ans-box.empty {
+  color: #94a3b8;
+  font-size: 0.82rem;
+  font-style: italic;
+  background: #fafafa;
+  border: 1.5px dashed #cbd5e1;
+}
+
+.results-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

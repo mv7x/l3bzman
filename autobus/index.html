@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    (function() {
+      var p = window.location.pathname;
+      if (p && !p.endsWith('/') && !p.endsWith('.html')) {
+        window.location.replace(p + '/' + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>أتوبيس كومبليت الكيوت 🎀🌸</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <div class="bg-pattern"></div>
+  <div class="main-container">
+
+    <!-- زر الرجوع للـ Hub -->
+    <a href="../index.html" class="back-hub-btn">← الألعاب</a>
+
+    <!-- 1. شاشة تسجيل الدخول بالاسم -->
+    <div id="auth-screen" class="game-card">
+      <div class="card-header lobby-header">
+        <div class="logo-badge">🎀🌸✨</div>
+        <h1>أتوبيس كومبليت</h1>
+        <p class="subtitle">سجلي اسمك للدخول إلى اللعبة 💖</p>
+      </div>
+      <div class="card-body">
+        <div class="input-group">
+          <label for="login-username">👤 اكتبي اسمك (حسابك باللعبة)</label>
+          <input type="text" id="login-username" placeholder="اكتبي اسمك هنا (مثال: محمد، جنة...)" maxlength="15" autofocus>
+        </div>
+        <button id="btn-login" class="btn btn-primary" style="width: 100%;">
+          <span>🚀 دخول للعبة 💖</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. شاشة اللوبي -->
+    <div id="lobby-screen" class="game-card hidden">
+      <div class="card-header lobby-header">
+        <div class="user-greeting-badge">
+          <span>أهلاً بك يا</span>
+          <strong id="display-user-name">...</strong>
+          <button id="btn-logout" class="btn-logout" title="تغيير الاسم">✏️</button>
+        </div>
+        <h1>غرف التحدي</h1>
+        <p class="subtitle">أنشئي غرفة جديدة أو انضمي لصاحبتك 💖</p>
+      </div>
+      <div class="card-body">
+        <div class="action-buttons">
+          <button id="btn-create-room" class="btn btn-primary">
+            <span>✨ إنشاء غرفة جديدة 🎀</span>
+          </button>
+          <div class="divider"><span>أو انضمي لغرفة</span></div>
+          <div class="join-box">
+            <input type="text" id="room-code-input" placeholder="كود الغرفة 💌" maxlength="6">
+            <button id="btn-join-room" class="btn btn-secondary">دخول 💕</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. شاشة الانتظار -->
+    <div id="waiting-screen" class="game-card hidden">
+      <div class="card-header">
+        <h2>غرفة التحدي الكيوت 🌸</h2>
+        <div class="room-code-badge">
+          <span>كود الغرفة:</span>
+          <strong id="display-room-code">----</strong>
+          <button id="btn-copy-link" class="btn-icon" title="نسخ رابط الدعوة">💌</button>
+        </div>
+      </div>
+      <div class="card-body waiting-body">
+        <div class="players-vs">
+          <div class="player-slot host-slot">
+            <div class="avatar">👑🌸</div>
+            <span id="host-name" class="name">المضيف</span>
+            <span class="status ready">جاهز 💖</span>
+          </div>
+          <div class="vs-circle">VS</div>
+          <div class="player-slot guest-slot">
+            <div class="avatar" id="guest-avatar">⏳🎀</div>
+            <span id="guest-name" class="name">في انتظار الخصم...</span>
+            <span id="guest-status" class="status waiting">ينتظر</span>
+          </div>
+        </div>
+        <div class="waiting-actions">
+          <p id="waiting-hint" class="hint-text">شاركي الكود مع صاحبتك للبدء فوراً! 💌✨</p>
+          <button id="btn-start-game" class="btn btn-primary hidden">🚀 ابدأي اللعبة الآن 💖</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. شاشة اللعبة الحية -->
+    <div id="game-screen" class="game-card gameplay-card hidden">
+      <div class="gameplay-header">
+        <div class="timer-badge">
+          <span id="timer-seconds">60</span>
+          <span class="timer-icon">⏱️</span>
+        </div>
+        <div class="header-titles">
+          <h2>جولة سريعة 💖</h2>
+          <p>تحدي الثواني الأخيرة!</p>
+        </div>
+        <div class="letter-badge">
+          <span class="sparkle-icon">✨</span>
+          <span id="current-letter" class="letter-text">أ</span>
+        </div>
+      </div>
+      <div class="opponent-live-bar">
+        <span class="opp-label" id="opp-prog-name">👤 الخصم:</span>
+        <div class="opp-progress-track">
+          <div id="opp-prog-fill" class="opp-progress-fill" style="width: 0%"></div>
+        </div>
+        <span id="opp-prog-count" class="opp-count">0/5</span>
+      </div>
+      <div class="categories-list">
+        <div class="category-row" id="row-human">
+          <span class="check-icon" id="check-human">🌸</span>
+          <input type="text" id="input-human" class="game-input" placeholder="اكتب..." autocomplete="off">
+          <div class="category-label"><span>إنسان</span><span class="cat-icon">👸</span></div>
+        </div>
+        <div class="category-row" id="row-animal">
+          <span class="check-icon" id="check-animal">🌸</span>
+          <input type="text" id="input-animal" class="game-input" placeholder="اكتب..." autocomplete="off">
+          <div class="category-label"><span>حيوان</span><span class="cat-icon">🐱</span></div>
+        </div>
+        <div class="category-row" id="row-plant">
+          <span class="check-icon" id="check-plant">🌸</span>
+          <input type="text" id="input-plant" class="game-input" placeholder="اكتب..." autocomplete="off">
+          <div class="category-label"><span>نبات</span><span class="cat-icon">🍓</span></div>
+        </div>
+        <div class="category-row" id="row-item">
+          <span class="check-icon" id="check-item">🌸</span>
+          <input type="text" id="input-item" class="game-input" placeholder="اكتب..." autocomplete="off">
+          <div class="category-label"><span>جماد</span><span class="cat-icon">🎀</span></div>
+        </div>
+        <div class="category-row" id="row-country">
+          <span class="check-icon" id="check-country">🌸</span>
+          <input type="text" id="input-country" class="game-input" placeholder="اكتب..." autocomplete="off">
+          <div class="category-label"><span>بلاد</span><span class="cat-icon">🏰</span></div>
+        </div>
+      </div>
+      <div class="gameplay-footer">
+        <p class="footer-prompt">مخك أسرع من كذا؟ 💖✨</p>
+        <button id="btn-submit" class="btn btn-submit">أتوبيس كومبليت! 🎀✨</button>
+      </div>
+    </div>
+
+    <!-- 5. شاشة النتائج -->
+    <div id="results-screen" class="game-card results-card hidden">
+      <div class="card-header results-header">
+        <div id="winner-crown" class="winner-crown">👑💖</div>
+        <h2 id="winner-announcement">ألف مبروك للفائزة! 🎉</h2>
+        <p id="winner-subtitle">تم قفل الجولة وتسليم جميع الإجابات</p>
+      </div>
+      <div class="card-body results-body">
+        <div class="players-result-summary">
+          <div class="res-player-card" id="card-p1">
+            <span class="player-icon">👑</span>
+            <span class="p-name" id="res-name-p1">أنت</span>
+            <span class="p-badge winner-badge" id="badge-p1">🏆 الفائز</span>
+          </div>
+          <div class="vs-res-text">مقارنة الإجابات</div>
+          <div class="res-player-card" id="card-p2">
+            <span class="player-icon">🌸</span>
+            <span class="p-name" id="res-name-p2">الخصم</span>
+            <span class="p-badge second-badge" id="badge-p2">تم قفل الجولة عليه</span>
+          </div>
+        </div>
+        <div class="clean-table-container">
+          <div class="clean-row-header">
+            <span class="col-cat">الفئة</span>
+            <span class="col-ans" id="col-title-p1">أنت</span>
+            <span class="col-ans" id="col-title-p2">الخصم</span>
+          </div>
+          <div class="clean-data-row">
+            <div class="cat-pill">👸 إنسان</div>
+            <div class="ans-box ans-p1" id="res-p1-human">—</div>
+            <div class="ans-box ans-p2" id="res-p2-human">—</div>
+          </div>
+          <div class="clean-data-row">
+            <div class="cat-pill">🐱 حيوان</div>
+            <div class="ans-box ans-p1" id="res-p1-animal">—</div>
+            <div class="ans-box ans-p2" id="res-p2-animal">—</div>
+          </div>
+          <div class="clean-data-row">
+            <div class="cat-pill">🍓 نبات</div>
+            <div class="ans-box ans-p1" id="res-p1-plant">—</div>
+            <div class="ans-box ans-p2" id="res-p2-plant">—</div>
+          </div>
+          <div class="clean-data-row">
+            <div class="cat-pill">🎀 جماد</div>
+            <div class="ans-box ans-p1" id="res-p1-item">—</div>
+            <div class="ans-box ans-p2" id="res-p2-item">—</div>
+          </div>
+          <div class="clean-data-row">
+            <div class="cat-pill">🏰 بلاد</div>
+            <div class="ans-box ans-p1" id="res-p1-country">—</div>
+            <div class="ans-box ans-p2" id="res-p2-country">—</div>
+          </div>
+        </div>
+        <div class="results-actions">
+          <button id="btn-next-round" class="btn btn-primary">🔄 جولة جديدة بحرف آخر 🎀</button>
+          <button id="btn-leave-room" class="btn btn-secondary">🚪 خروج للرئيسية 🌸</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

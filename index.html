@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎮 Game Hub - الألعاب</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Tajawal', sans-serif; }
+
+    /* ── Light Mode (الافتراضي) ── */
+    :root, [data-theme="light"] {
+      --hub-bg: #f8fafc;
+      --hub-card-bg: #ffffff;
+      --hub-text: #0f172a;
+      --hub-sub: #64748b;
+      --hub-border: #e2e8f0;
+      --hub-shadow: 0 10px 30px rgba(0,0,0,0.06);
+      --hub-toggle-bg: #ffffff;
+      --hub-toggle-border: #cbd5e1;
+      --hub-toggle-text: #0f172a;
+    }
+
+    /* ── Dark Mode ── */
+    [data-theme="dark"] {
+      --hub-bg: #0b131e;
+      --hub-card-bg: #152232;
+      --hub-text: #f8fafc;
+      --hub-sub: #94a3b8;
+      --hub-border: #233549;
+      --hub-shadow: 0 14px 40px rgba(0,0,0,0.4);
+      --hub-toggle-bg: #1e293b;
+      --hub-toggle-border: #334155;
+      --hub-toggle-text: #f8fafc;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--hub-bg);
+      color: var(--hub-text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 50px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* ── شريط علوي للثيم والبروفايل ── */
+    .hub-topbar {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+
+    .user-profile-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 16px;
+      border-radius: 999px;
+      background: var(--hub-toggle-bg);
+      border: 1.5px solid var(--hub-toggle-border);
+      color: var(--hub-toggle-text);
+      font-size: 0.92rem;
+      font-weight: 800;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .user-profile-pill:hover {
+      transform: translateY(-2px);
+      border-color: #38bdf8;
+    }
+    .user-profile-pill .edit-icon {
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+
+    .theme-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: 999px;
+      background: var(--hub-toggle-bg);
+      border: 1.5px solid var(--hub-toggle-border);
+      color: var(--hub-toggle-text);
+      font-size: 0.92rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      transition: all 0.2s ease;
+    }
+    .theme-toggle-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    /* ── نافذة إدخال الاسم المودال ── */
+    .name-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 19, 30, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .name-modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .name-modal-box {
+      background: var(--hub-card-bg);
+      border: 2px solid var(--hub-border);
+      border-radius: 28px;
+      padding: 36px 28px;
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .name-modal-overlay.active .name-modal-box {
+      transform: scale(1);
+    }
+
+    .name-modal-icon {
+      font-size: 3.5rem;
+      margin-bottom: 12px;
+      display: inline-block;
+      animation: popLogo 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .name-modal-title {
+      font-size: 1.6rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+      color: var(--hub-text);
+    }
+
+    .name-modal-desc {
+      font-size: 0.95rem;
+      color: var(--hub-sub);
+      font-weight: 600;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .name-modal-input {
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 16px;
+      border: 2px solid var(--hub-border);
+      background: var(--hub-bg);
+      color: var(--hub-text);
+      font-size: 1.1rem;
+      font-weight: 800;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 18px;
+    }
+    .name-modal-input:focus {
+      border-color: #38bdf8;
+    }
+
+    .name-modal-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #ff4500, #ff7800, #00a6fb);
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 900;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(255, 69, 0, 0.35);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .name-modal-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(255, 69, 0, 0.45);
+    }
+
+    /* ── هيدر المركز ── */
+    .hub-header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    .hub-logo {
+      font-size: 3.4rem;
+      margin-bottom: 8px;
+      display: inline-block;
+      animation: popLogo 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes popLogo {
+      0% { transform: scale(0.4); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .hub-header h1 {
+      font-size: 2.3rem;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+
+    .hub-header p {
+      color: var(--hub-sub);
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    /* ── شبكة الألعاب ── */
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 22px;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    /* كارت اللعبة */
+    .game-card {
+      background: var(--hub-card-bg);
+      border: 1.5px solid var(--hub-border);
+      border-radius: 26px;
+      overflow: hidden;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--hub-shadow);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      position: relative;
+    }
+
+    .game-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 16px 36px rgba(0,0,0,0.14);
+    }
+
+    /* كارت أتوبيس كومبليت */
+    .game-card.pink-theme {
+      border-color: rgba(255, 84, 131, 0.25);
+    }
+    .game-card.pink-theme:hover {
+      border-color: #ff5483;
+    }
+
+    /* كارت Matching Cards */
+    .game-card.gold-theme {
+      border-color: rgba(217, 119, 6, 0.25);
+    }
+    .game-card.gold-theme:hover {
+      border-color: #f59e0b;
+    }
+
+    /* كارت Ember & Tide Elemental Co-Op */
+    .game-card.elemental-theme {
+      border-color: rgba(56, 189, 248, 0.35);
+      background: linear-gradient(180deg, var(--hub-card-bg) 70%, rgba(255, 69, 0, 0.05));
+    }
+    .game-card.elemental-theme:hover {
+      border-color: #38bdf8;
+      box-shadow: 0 16px 36px rgba(56, 189, 248, 0.2);
+    }
+    .elemental-theme .card-title {
+      background: linear-gradient(135deg, #ff4500, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .elemental-theme .tag {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+    }
+    .elemental-theme .play-btn {
+      background: linear-gradient(135deg, #ff4500, #ff7800, #00a6fb);
+      box-shadow: 0 4px 15px rgba(255, 69, 0, 0.35);
+    }
+
+    .card-hero {
+      padding: 30px 22px 16px;
+      text-align: center;
+    }
+
+    .card-emoji {
+      font-size: 3.6rem;
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 1.55rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+    .pink-theme .card-title { color: #ff5483; }
+    .gold-theme .card-title { color: #d97706; }
+
+    .card-desc {
+      font-size: 0.92rem;
+      color: var(--hub-sub);
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    .card-tags {
+      padding: 10px 22px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      justify-content: center;
+    }
+
+    .tag {
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+    .pink-theme .tag {
+      background: rgba(255, 84, 131, 0.1);
+      color: #ff5483;
+    }
+    .gold-theme .tag {
+      background: rgba(217, 119, 6, 0.1);
+      color: #d97706;
+    }
+
+    .card-footer {
+      padding: 16px 22px 24px;
+      margin-top: auto;
+    }
+
+    .play-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 14px;
+      border-radius: 14px;
+      font-size: 1.05rem;
+      font-weight: 900;
+      border: none;
+      cursor: pointer;
+      color: white;
+    }
+    .pink-theme .play-btn {
+      background: linear-gradient(135deg, #ff4071, #ff7597);
+      box-shadow: 0 4px 15px rgba(255, 64, 113, 0.3);
+    }
+    .gold-theme .play-btn {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+    }
+
+    .badge-new {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      background: linear-gradient(135deg, #ff4500, #00a6fb);
+      color: white;
+      font-size: 0.72rem;
+      font-weight: 900;
+      padding: 4px 11px;
+      border-radius: 999px;
+    }
+
+    .hub-footer {
+      margin-top: 40px;
+      text-align: center;
+      color: var(--hub-sub);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── شريط علوي للثيم والبروفايل ── -->
+  <div class="hub-topbar">
+    <div id="user-profile-pill" class="user-profile-pill" title="اضغط لتغيير اسمك">
+      <span>👤</span>
+      <span id="header-user-name">لاعب جديد</span>
+      <span class="edit-icon">✏️</span>
+    </div>
+
+    <button id="theme-toggle-btn" class="theme-toggle-btn">
+      <span id="theme-icon">🌙</span>
+      <span id="theme-text">الوضع الداكن</span>
+    </button>
+  </div>
+
+  <!-- ── نافذة إدخال الاسم لأول مرة أو التعديل ── -->
+  <div id="name-modal" class="name-modal-overlay">
+    <div class="name-modal-box">
+      <div class="name-modal-icon">🎮✨</div>
+      <h2 class="name-modal-title">مرحباً بك في Game Hub!</h2>
+      <p class="name-modal-desc">أدخل اسمك أو لقبك المفضل لربطه مع شخصيتك في جميع الألعاب والمباريات أونلاين</p>
+      <input type="text" id="modal-name-input" class="name-modal-input" placeholder="اكتب اسمك هنا (مثال: أحمد، سارة...)" maxlength="16" autocomplete="off" />
+      <button id="modal-name-submit" class="name-modal-btn">🚀 حفظ وبدء اللعب ✨</button>
+    </div>
+  </div>
+
+  <div class="hub-header">
+    <div class="hub-logo">🎮</div>
+    <h1>Game Hub</h1>
+    <p>اختار اللعبة وتحدى أصحابك 1v1 وتعاونوا معاً! ✨</p>
+  </div>
+
+  <div class="games-grid">
+
+    <!-- لعبة Ember & Tide (جديدة كلياً) -->
+    <a href="ember-tide/index.html" class="game-card elemental-theme" data-game-link>
+      <div class="badge-new">🔥💧 أصلي جديد</div>
+      <div class="card-hero">
+        <span class="card-emoji">🔥🏰💧</span>
+        <h2 class="card-title">Ember & Tide</h2>
+        <p class="card-desc">مغامرة ألغاز تعاونية 2D أصلية لشخصين<br>تحكم بعنصري النار والماء وتخطَّ ألغاز المعابد القديمة!</p>
+      </div>
+      <div class="card-tags">
+        <span class="tag">🤝 تعاون لشخصين (Co-Op)</span>
+        <span class="tag">🌐 أونلاين 1v1 حقيقي</span>
+        <span class="tag">🧩 ألغاز ومنصات</span>
+        <span class="tag">🗺️ 5 معابد مميزة</span>
+      </div>
+      <div class="card-footer">
+        <span class="play-btn">🔥 العب الآن (Ember & Tide) 💧</span>
+      </div>
+    </a>
+
+    <!-- لعبة أتوبيس كومبليت -->
+    <a href="autobus/index.html" class="game-card pink-theme" data-game-link>
+      <div class="card-hero">
+        <span class="card-emoji">🎀🚌✨</span>
+        <h2 class="card-title">أتوبيس كومبليت</h2>
+        <p class="card-desc">تحدي سرعة الكلمات 1v1<br>اكتب الكلمات بحرف محدد أسرع من خصمك!</p>
+      </div>
+      <div class="card-tags">
+        <span class="tag">⚡ سرعة</span>
+        <span class="tag">🧠 ذكاء وتحدي</span>
+        <span class="tag">👥 1v1 أونلاين</span>
+      </div>
+      <div class="card-footer">
+        <span class="play-btn">🎀 العب الآن (أتوبيس) ✨</span>
+      </div>
+    </a>
+
+    <!-- لعبة Matching Cards -->
+    <a href="matching/index.html" class="game-card gold-theme" data-game-link>
+      <div class="card-hero">
+        <span class="card-emoji">🃏♠️♥️</span>
+        <h2 class="card-title">Matching Cards</h2>
+        <p class="card-desc">لعبة الذاكرة بورق الكوتشينة<br>اقلب البطاقات واجمع أكبر عدد من الأزواج!</p>
+      </div>
+      <div class="card-tags">
+        <span class="tag">🧠 ذاكرة</span>
+        <span class="tag">🃏 كوتشينة</span>
+        <span class="tag">👥 1v1</span>
+        <span class="tag">26 زوج</span>
+      </div>
+      <div class="card-footer">
+        <button class="play-btn" type="button">🎴 ابدأ اللعب 🃏</button>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="hub-footer">
+    🎮 Game Hub • ألعاب التحدي في مكان واحد ✨
+  </div>
+
+  <!-- سكربت حفظ وتطبيق الثيم والاسم الشامل عبر جميع الألعاب -->
+  <script>
+    const btn = document.getElementById('theme-toggle-btn');
+    const icon = document.getElementById('theme-icon');
+    const text = document.getElementById('theme-text');
+    const html = document.documentElement;
+
+    const nameModal = document.getElementById('name-modal');
+    const nameInput = document.getElementById('modal-name-input');
+    const nameSubmit = document.getElementById('modal-name-submit');
+    const userPill = document.getElementById('user-profile-pill');
+    const headerUserName = document.getElementById('header-user-name');
+
+    let pendingNavigationUrl = null;
+
+    function setTheme(mode) {
+      html.setAttribute('data-theme', mode);
+      try { localStorage.setItem('global_game_theme', mode); } catch(e){}
+      if (mode === 'dark') {
+        icon.textContent = '☀️';
+        text.textContent = 'الوضع الفاتح';
+      } else {
+        icon.textContent = '🌙';
+        text.textContent = 'الوضع الداكن';
+      }
+    }
+
+    // جلب الثيم المحفوظ
+    const savedTheme = localStorage.getItem('global_game_theme') || 'light';
+    setTheme(savedTheme);
+
+    btn.addEventListener('click', () => {
+      const current = html.getAttribute('data-theme') || 'light';
+      setTheme(current === 'dark' ? 'light' : 'dark');
+    });
+
+    // إدارة اسم اللاعب الموحد
+    function getStoredName() {
+      return localStorage.getItem('agy_user_name') || localStorage.getItem('ember_tide_player_name') || '';
+    }
+
+    function saveGlobalName(name) {
+      const clean = (name || '').trim().substring(0, 16);
+      if (clean) {
+        localStorage.setItem('agy_user_name', clean);
+        localStorage.setItem('ember_tide_player_name', clean);
+        updateProfileDisplay(clean);
+      }
+      return clean;
+    }
+
+    function updateProfileDisplay(name) {
+      if (name) {
+        headerUserName.textContent = name;
+      } else {
+        headerUserName.textContent = 'لاعب جديد';
+      }
+    }
+
+    function openNameModal(forUrl = null) {
+      pendingNavigationUrl = forUrl;
+      const current = getStoredName();
+      nameInput.value = current || '';
+      nameModal.classList.add('active');
+      setTimeout(() => nameInput.focus(), 150);
+    }
+
+    function closeNameModal() {
+      nameModal.classList.remove('active');
+    }
+
+    nameModal.addEventListener('click', (e) => {
+      if (e.target === nameModal) {
+        closeNameModal();
+        if (pendingNavigationUrl) {
+          window.location.href = pendingNavigationUrl;
+        }
+      }
+    });
+
+    nameSubmit.addEventListener('click', () => {
+      let val = nameInput.value.trim();
+      if (!val) {
+        val = 'لاعب_' + Math.floor(100 + Math.random() * 900);
+      }
+      saveGlobalName(val);
+      closeNameModal();
+      if (pendingNavigationUrl) {
+        window.location.href = pendingNavigationUrl;
+      }
+    });
+
+    nameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        nameSubmit.click();
+      } else if (e.key === 'Escape') {
+        closeNameModal();
+      }
+    });
+
+    userPill.addEventListener('click', () => {
+      openNameModal(null);
+    });
+
+    // اعتراض ضغطات كروت الألعاب للتأكد من وجود اسم
+    document.querySelectorAll('[data-game-link]').forEach(card => {
+      card.addEventListener('click', (e) => {
+        const name = getStoredName();
+        if (!name) {
+          e.preventDefault();
+          openNameModal(card.getAttribute('href'));
+        }
+      });
+    });
+
+    // عند فتح الصفحة لأول مرة
+    const initialName = getStoredName();
+    if (initialName) {
+      updateProfileDisplay(initialName);
+    }
+  </script>
+</body>
+</html>
