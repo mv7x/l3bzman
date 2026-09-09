@@ -22,9 +22,11 @@ export class PhysicsEngine {
     );
   }
 
-  // Resolve one player using separated X/Y movement. The previous position is
-  // used to decide whether the collision was actually a landing or ceiling hit;
-  // this prevents side contacts from snapping a player to the top of a platform.
+  // Resolve one player using separated X/Y movement.
+  // The solver deliberately handles both normal crossings and a small initial
+  // penetration. The latter is important when a spawn point is exactly on (or
+  // a pixel inside) a platform: a zero-velocity player must never fall through
+  // the floor before the first collision frame.
   static resolvePlayerPhysics(player, platforms, movingPlatforms, dt) {
     const previousAttachedPlatform = player.attachedPlatform;
     const wasGrounded = !!player.isGrounded;
@@ -96,8 +98,22 @@ export class PhysicsEngine {
     for (const solid of solids) {
       if (!PhysicsEngine.checkAABB(currentHitbox, solid)) continue;
 
-      if (player.vy > 0 && previousBottom <= solid.y + epsilon) {
-        // Falling onto the top surface.
+      if (player.vy >= 0 && previousBottom <= solid.y + epsilon) {
+        // Normal falling/landing collision.
+        player.y = solid.y - hitboxOffsetY - hitboxHeight;
+        player.vy = 0;
+        player.isGrounded = true;
+        if (solid.dx !== undefined || solid.dy !== undefined) {
+          player.attachedPlatform = solid;
+        }
+      } else if (
+        player.vy >= 0 &&
+        player.y + hitboxOffsetY < solid.y &&
+        currentHitbox.y + currentHitbox.height > solid.y
+      ) {
+        // Spawn/initial-overlap recovery and small numerical penetration.
+        // Only applies when the player's top is still above the platform,
+        // so it cannot incorrectly snap a player upward from below.
         player.y = solid.y - hitboxOffsetY - hitboxHeight;
         player.vy = 0;
         player.isGrounded = true;
