@@ -40,8 +40,8 @@
                 <h1>🔥💧 Fireboy & Watergirl</h1>
                 <p>Choose how you want to play.</p>
                 <div class="room-actions">
-                    <button id="local-play" type="button" class="room-btn" onclick="window.fireboyLocalPlay()">Local Play</button>
-                    <button id="online-play" type="button" class="room-btn secondary" onclick="window.fireboyOnlinePlay()">Online Play</button>
+                    <button id="local-play" type="button" class="room-btn">Local Play</button>
+                    <button id="online-play" type="button" class="room-btn secondary">Online Play</button>
                 </div>
                 <a class="room-btn secondary hub-link" href="../index.html">← Back to Game Hub</a>
                 <div id="mode-message" class="room-message"></div>
@@ -59,7 +59,7 @@
                         <button id="create-room" type="button" class="room-btn">Create Room</button>
                         <button id="join-room" type="button" class="room-btn secondary">Join Room</button>
                     </div>
-                    <button id="back-mode" type="button" class="room-btn secondary hub-link" onclick="window.fireboyBack()">Back</button>
+                    <button id="back-mode" type="button" class="room-btn secondary hub-link">Back</button>
                     <a class="room-btn secondary hub-link" href="../index.html">← Game Hub</a>
                     <div id="room-message-setup" class="room-message">Create a room or enter a room code.</div>
                 </div>
@@ -81,43 +81,6 @@
 
         <canvas id="canvas" class="hidden"></canvas>
 
-        <script>
-            window.fireboyOnlinePlay = function () {
-                document.getElementById("mode-menu").classList.add("hidden");
-                document.getElementById("room-lobby").classList.remove("hidden");
-            };
-
-            window.fireboyBack = function () {
-                document.getElementById("room-lobby").classList.add("hidden");
-                document.getElementById("mode-menu").classList.remove("hidden");
-            };
-
-            window.fireboyLocalPlay = async function () {
-                const button = document.getElementById("local-play");
-                const message = document.getElementById("mode-message");
-                button.disabled = true;
-                message.textContent = "Loading game...";
-                message.classList.remove("error");
-
-                try {
-                    // Use the deployed repository path explicitly. Vercel can rewrite the
-                    // document URL, so a document-relative import can incorrectly become /res/js/.
-                    const game = await import("/Fireboy-Watergirl/res/js/game.js");
-                    const helpers = await import("/Fireboy-Watergirl/res/js/helpers.js");
-                    await helpers.loadData();
-                    helpers.loadDataFromLocalStorage();
-                    document.getElementById("mode-menu").classList.add("hidden");
-                    document.getElementById("room-lobby").classList.add("hidden");
-                    document.getElementById("canvas").classList.remove("hidden");
-                    game.playGame();
-                } catch (error) {
-                    console.error("Fireboy-Watergirl failed to start:", error);
-                    message.textContent = "Game failed to load: " + (error.message || error);
-                    message.classList.add("error");
-                    button.disabled = false;
-                }
-            };
-        </script>
-        <script src="./res/js/main.js" defer></script>
+        <script src="./res/js/main.js" type="module"></script>
     </body>
 </html>
