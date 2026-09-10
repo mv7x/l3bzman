@@ -80,9 +80,13 @@ const jsonsFiles = [
 ];
 
 async function loadData() {
+    const dataBaseUrl = new URL("../data/", import.meta.url);
+
     const results = await Promise.all(
         jsonsFiles.map(async (jsonFile) => {
-            const response = await fetch(`./res/data/${jsonFile}.json`, { cache: "no-store" });
+            const response = await fetch(new URL(`${jsonFile}.json`, dataBaseUrl), {
+                cache: "no-store",
+            });
             if (!response.ok) throw new Error(`Failed to load ${jsonFile}.json`);
             return [jsonFile, await response.json()];
         })
