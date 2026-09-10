@@ -24,7 +24,12 @@ async function ensureGameLoaded() {
             helpersModule.loadDataFromLocalStorage();
             gameModule = gameModule || await import("./game.js");
             return gameModule;
-        })();
+        })().catch((error) => {
+            dataReadyPromise = null;
+            gameModule = null;
+            helpersModule = null;
+            throw error;
+        });
     }
     return dataReadyPromise;
 }
@@ -44,11 +49,12 @@ async function startLocalGame() {
     try {
         const game = await ensureGameLoaded();
         if (gameStarted) return;
-        gameStarted = true;
+
         $("mode-menu").classList.add("hidden");
         $("room-lobby").classList.add("hidden");
         $("canvas").classList.remove("hidden");
         game.playGame();
+        gameStarted = true;
     } catch (error) {
         console.error("Fireboy-Watergirl startup error:", error);
         showLobbyMessage(error?.message || "The game could not start. Open the browser console for details.", true);
@@ -85,20 +91,20 @@ async function beginOnlineGame() {
         await ensureGameLoaded();
         const net = await getNetwork();
         net.patchPlayerNetworking();
-    } catch (error) {
-        showLobbyMessage(error.message || "Game could not start.", true);
-        return;
-    }
 
-    if (gameStarted) return;
-    gameStarted = true;
-    const info = network.getRoomInfo();
-    document.body.classList.add("playing-online");
-    $("room-lobby").classList.add("hidden");
-    $("canvas").classList.remove("hidden");
-    history.replaceState(null, "", `${window.location.pathname}?room=${info.roomCode}`);
-    gameModule.playGame();
-    setTimeout(autoSelectFirstLevel, 150);
+        if (gameStarted) return;
+        const info = net.getRoomInfo();
+        document.body.classList.add("playing-online");
+        $("room-lobby").classList.add("hidden");
+        $("canvas").classList.remove("hidden");
+        history.replaceState(null, "", `${window.location.pathname}?room=${info.roomCode}`);
+        gameModule.playGame();
+        gameStarted = true;
+        setTimeout(autoSelectFirstLevel, 150);
+    } catch (error) {
+        gameStarted = false;
+        showLobbyMessage(error.message || "Game could not start.", true);
+    }
 }
 
 async function create() {
@@ -207,7 +213,6 @@ function showOnline() {
 }
 
 function boot() {
-    // No game or Firebase import happens here. The UI always gets its handlers.
     $("local-play")?.addEventListener("click", startLocalGame);
     $("online-play")?.addEventListener("click", showOnline);
     $("back-mode")?.addEventListener("click", showMode);
